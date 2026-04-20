@@ -1,0 +1,16 @@
+﻿#!/bin/sh
+echo "[INFO] Commited successfully. Attempting to push to remote..."
+REMOTE_URL=$(git remote get-url origin 2>/dev/null)
+
+if [ -z "$REMOTE_URL" ]; then
+    echo "[WARNING] Remote 'origin' is not set. Skipping auto-push."
+    echo "          To set it: git remote add origin <your-repo-url>"
+else
+    BRANCH=$(git rev-parse --abbrev-ref HEAD)
+    git push origin "$BRANCH"
+    if [ $? -eq 0 ]; then
+        echo "[SUCCESS] Pushed to GitHub automatically."
+    else
+        echo "[ERROR] Push failed. Please check your network or remote permissions."
+    fi
+fi

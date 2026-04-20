@@ -1,0 +1,15 @@
+# IDE
+.cursor/
+.vscode/
+
+# Sensitive Data
+.env
+*.local
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Logs
+*.log
+SYNC_LOG.md
