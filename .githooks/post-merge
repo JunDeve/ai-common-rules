@@ -1,5 +1,0 @@
-#!/bin/sh
-DATE=$(date '+%Y-%m-%d %H:%M:%S')
-echo '
-Last Sync: $DATE' >> README.md
-echo '[INFO] Pull date recorded in README.md'
