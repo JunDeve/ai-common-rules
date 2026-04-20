@@ -35,6 +35,60 @@ function Get-UserPrompt {
   return ""
 }
 
+function Invoke-Cli {
+  param([string]$Command)
+  $output = & cmd /c $Command 2>&1
+  if ($LASTEXITCODE -ne 0) {
+    throw "Command failed: $Command`n$output"
+  }
+  return ($output | Out-String).Trim()
+}
+
+function Has-OriginRemote {
+  & cmd /c "git remote get-url origin" *> $null
+  return ($LASTEXITCODE -eq 0)
+}
+
+function Has-Upstream {
+  & cmd /c "git rev-parse --abbrev-ref --symbolic-full-name @{u}" *> $null
+  return ($LASTEXITCODE -eq 0)
+}
+
+function Ensure-OriginRemote {
+  param(
+    [string]$GithubOwner,
+    [bool]$CreateRepoIfMissing = $false
+  )
+
+  if (Has-OriginRemote) {
+    return
+  }
+
+  & cmd /c "gh --version" *> $null
+  if ($LASTEXITCODE -ne 0) {
+    throw "GitHub CLI (gh) is required to auto-create the repository."
+  }
+
+  $repoName = Split-Path -Leaf (Get-Location)
+  if ([string]::IsNullOrWhiteSpace($repoName)) {
+    throw "Could not detect project root folder name."
+  }
+
+  $repoFullName = "$GithubOwner/$repoName"
+
+  & cmd /c "gh repo view $repoFullName --json name -q .name" *> $null
+  if ($LASTEXITCODE -ne 0) {
+    if ($CreateRepoIfMissing) {
+      # Default to private for safety. Change to --public if preferred.
+      Invoke-Cli "gh repo create $repoFullName --private --source . --remote origin"
+      return
+    }
+    throw "Remote repository not found: $repoFullName"
+  }
+
+  Invoke-Git "git remote add origin https://github.com/$repoFullName.git" | Out-Null
+}
+
 try {
   $rawInput = [Console]::In.ReadToEnd()
   if ([string]::IsNullOrWhiteSpace($rawInput)) {
@@ -71,6 +125,8 @@ try {
       exit 0
     }
 
+    Ensure-OriginRemote -GithubOwner "JunDeve" -CreateRepoIfMissing $true
+
     Invoke-Git "git pull --rebase origin $branch" | Out-Null
     Invoke-Git "git add -A" | Out-Null
 
@@ -81,7 +137,11 @@ try {
       Invoke-Git $commitCommand | Out-Null
     }
 
-    Invoke-Git "git push origin $branch" | Out-Null
+    if (Has-Upstream) {
+      Invoke-Git "git push origin $branch" | Out-Null
+    } else {
+      Invoke-Git "git push -u origin $branch" | Out-Null
+    }
     Write-HookJson -Permission "deny" -UserMessage "[SYNC] 업로드 완료: origin/$branch (message: $commitMessage)" -AgentMessage "Handled trigger: 올리기::"
     exit 0
   }
@@ -92,6 +152,8 @@ try {
       Write-HookJson -Permission "deny" -UserMessage "[SYNC] 형식 오류: 내리기::메세지내용 형식으로 입력하세요." -AgentMessage "Missing message for download trigger."
       exit 0
     }
+
+    Ensure-OriginRemote -GithubOwner "JunDeve" -CreateRepoIfMissing $false
 
     Invoke-Git "git pull --rebase origin $branch" | Out-Null
     Write-HookJson -Permission "deny" -UserMessage "[SYNC] 내려받기 완료: origin/$branch (message: $pullMessage)" -AgentMessage "Handled trigger: 내리기::"
