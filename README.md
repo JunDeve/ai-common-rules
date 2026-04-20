@@ -2,4 +2,8 @@
 
 Common behavioral protocols for AI agents.
 
-Last Sync: 2026-04-20 16:57:00 [비고: TEST]
+## Sync History
+
+| Date | Note |
+| :--- | :--- |
+| 2026-04-20 16:58:19 | Initial Table Setup || 2026-04-20 17:00:09 | test |
