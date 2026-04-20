@@ -1,9 +1,9 @@
 # AI Common Rules Template
 
-AI 에이전트의 사고 방식, 소통 표준, 그리고 자동화된 워크플로우를 규정하는 공통 규칙 저장소입니다.
+It is a common rule repository that defines the mindset, communication standards, and automated workflows of AI agents.
 
-- **Approval-First Workflow**: 모든 동작 전 사용자 승인 및 전/후 보고 의무화.
-- **Unified AI Triggers**: `올리기::`, `내리기::` 명령어를 통한 자동 Git 동기화.
+- **Approval-First Workflow**: All actions require user approval before execution, with mandatory pre- and post-action reporting.
+- **Unified AI Triggers**: `올리기::`, `내리기::` commands for automated Git synchronization.
 
 ## Sync History
 | Date | Note |
