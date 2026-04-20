@@ -1,7 +1,7 @@
 <!-- 
 이 파일은 모든 프로젝트에서 AI 에이전트가 준수해야 할 핵심 지침서입니다.
 모든 AI 에이전트는 매 질문마다 이 지침을 가장 먼저 읽고, 모든 답변과 행동의 근간으로 삼아야 합니다.
-[Last Modified: 2026-04-20]
+[Last Modified: 2026-04-20 16:40]
 
 This is the core guideline for all AI agents across all projects.
 AI must read this first for every request and apply it as the foundation for all actions.
