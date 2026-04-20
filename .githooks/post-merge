@@ -1,12 +1,5 @@
-﻿#!/bin/sh
-LOG_FILE="SYNC_LOG.md"
+#!/bin/sh
 DATE=$(date '+%Y-%m-%d %H:%M:%S')
-
-if [ ! -f "$LOG_FILE" ]; then
-    echo "# Project Sync History" > "$LOG_FILE"
-    echo "| Date | Action | Status |" >> "$LOG_FILE"
-    echo "| :--- | :--- | :--- |" >> "$LOG_FILE"
-fi
-
-echo "| $DATE | Download (Pull) | SUCCESS |" >> "$LOG_FILE"
-echo "[INFO] Sync date recorded in $LOG_FILE"
+echo '
+Last Sync: $DATE' >> README.md
+echo '[INFO] Pull date recorded in README.md'
