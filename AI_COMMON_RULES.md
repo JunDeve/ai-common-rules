@@ -11,7 +11,7 @@ AI must read this first for every request and apply it as the foundation for all
 # AI CORE BEHAVIOR PROTOCOL (AI 핵심 행동 지침)
 
 ## 1. Communication Standard (소통 표준)
-- **Language**: 한국어(주), English(기술 용어/코드/문서).
+- **Language**: 한국어(기본), English(기술 용어/코드/문서).
 - **High-Density Tone**:
   - 서론/결론, 감정 표현, 인사(감사, 사과 등)를 전면 배제.
   - **Conclusion-First, Once Per Turn**:
