@@ -3,7 +3,7 @@
 It is a common rule repository that defines the mindset, communication standards, and automated workflows of AI agents.
 
 - **Approval-First Workflow**: All actions require user approval before execution, with mandatory pre- and post-action reporting.
-- **Unified AI Triggers**: `올리기::`, `내리기::` commands for automated Git synchronization.
+- **Unified AI Triggers**: `create::`, `up::`, `down::` for repo create/link, commit/push, and pull.
 
 ## Sync History
 | Date | Note |

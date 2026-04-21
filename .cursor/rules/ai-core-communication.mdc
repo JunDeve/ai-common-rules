@@ -33,7 +33,7 @@ Last Modified: 2026-04-20
   - 셸 명령어(예: PowerShell, cmd)를 실행하기 전에는 명령어의 의미를 쉬운 한국어로 설명합니다.
   - 설명에는 난이도 표기를 포함하지 않습니다.
   - 실행 전에 반드시 사용자에게 실행 여부를 확인합니다.
-  - 단, 사용자가 `올리기::메세지내용` 또는 `내리기::메세지내용` 트리거를 입력한 경우에는 별도 확인 없이 즉시 실행합니다.
+  - 단, 사용자가 `create::title`, `up::message`, 또는 `down::message` 트리거를 입력한 경우에는 별도 확인 없이 즉시 실행합니다.
 
 ## English
 
@@ -61,4 +61,4 @@ Last Modified: 2026-04-20
   - Before executing any shell command (e.g., PowerShell or cmd), explain what the command does in simple Korean.
   - Do not include any difficulty rating.
   - Always ask for explicit execution approval before running it.
-  - Exception: if the user input is `올리기::message` or `내리기::message`, execute immediately without an extra confirmation step.
+  - Exception: if the user input matches `create::title`, `up::message`, or `down::message`, execute immediately without an extra confirmation step.

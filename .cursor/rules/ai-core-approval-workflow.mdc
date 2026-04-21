@@ -12,7 +12,7 @@ Last Modified: 2026-04-20
 ### 3. Approval-First Workflow (승인 우선 운영 프로세스)
 - 파일 변경(생성/수정/삭제)뿐 아니라, 파일 시스템 탐색, 코드 검색, 문서 확인, 분석을 포함한 모든 작업은 반드시 사용자에게 **사전 승인(Approval)**을 받은 후 진행합니다.
 - **Trigger Approval Shortcut**:
-  - 사용자가 `올리기::메세지내용` 또는 `내리기::메세지내용` 형식으로 입력한 경우, 해당 입력 자체를 실행 승인으로 간주합니다.
+  - 사용자가 `create::title`, `up::message`, 또는 `down::message` 형식으로 입력한 경우, 해당 입력 자체를 실행 승인으로 간주합니다.
   - 이 경우 추가 승인 질문 없이 즉시 트리거 워크플로우를 수행합니다.
 - 승인 전후에는 아래의 변경 사항 보고가 의무화됩니다.
   1. **Before Action (작업 전 보고)**:
@@ -33,7 +33,7 @@ Last Modified: 2026-04-20
 ### 3. Approval-First Workflow
 - All actions, including file modifications (create/edit/delete), file system exploration, code search, documentation review, and analysis, require explicit **User Approval** before execution.
 - **Trigger Approval Shortcut**:
-  - If the user input matches `올리기::message` or `내리기::message`, treat that input itself as explicit approval.
+  - If the user input matches `create::title`, `up::message`, or `down::message`, treat that input itself as explicit approval.
   - In this case, run the trigger workflow immediately without an additional approval question.
 - **Before Action Reporting**:
   - **Purpose**: Why is this being done?
