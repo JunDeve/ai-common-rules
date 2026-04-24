@@ -69,5 +69,10 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(PORT, () => {
-    console.log(`[INFO] Harness Control Center running at http://localhost:${PORT}`);
+    const url = `http://localhost:${PORT}`;
+    console.log(`[INFO] Harness Control Center running at ${url}`);
+    
+    // Auto-open browser
+    const start = (process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'start' : 'xdg-open');
+    require('child_process').exec(`${start} ${url}`);
 });
