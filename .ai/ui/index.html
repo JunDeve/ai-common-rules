@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Harness Control Center</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Fira+Code:wght@400;500&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .code-font { font-family: 'Fira Code', monospace; }
+        .tab-active { border-bottom: 2px solid #3b82f6; color: #3b82f6; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-900">
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-white border-r border-gray-200 flex flex-col">
+            <div class="p-6 border-b border-gray-200">
+                <h1 class="text-xl font-bold text-blue-600">AI Harness</h1>
+                <p class="text-xs text-gray-500 mt-1">Control Center v3.0</p>
+            </div>
+            <nav class="flex-1 p-4 space-y-2">
+                <button onclick="showTab('rules')" class="nav-btn w-full text-left px-4 py-2 rounded-lg hover:bg-gray-100 transition" id="btn-rules">📜 Rules & Patterns</button>
+                <button onclick="showTab('state')" class="nav-btn w-full text-left px-4 py-2 rounded-lg hover:bg-gray-100 transition" id="btn-state">🎯 Project State</button>
+                <button onclick="showTab('integrations')" class="nav-btn w-full text-left px-4 py-2 rounded-lg hover:bg-gray-100 transition" id="btn-integrations">🔗 Integrations</button>
+                <button onclick="showTab('logs')" class="nav-btn w-full text-left px-4 py-2 rounded-lg hover:bg-gray-100 transition" id="btn-logs">📝 Terminal Logs</button>
+            </nav>
+            <div class="p-4 border-t border-gray-200">
+                <div class="flex items-center space-x-2 text-xs text-gray-400">
+                    <span class="w-2 h-2 bg-green-500 rounded-full"></span>
+                    <span>System Online (Port 3000)</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 flex flex-col overflow-hidden">
+            <!-- Header -->
+            <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-8">
+                <h2 id="tab-title" class="text-lg font-semibold uppercase tracking-wider text-gray-600">Rules & Patterns</h2>
+                <div id="file-selector" class="flex space-x-2">
+                    <select id="select-file" onchange="loadFile()" class="bg-gray-100 border border-gray-300 text-sm rounded px-2 py-1">
+                        <option value="AI_COMMON_RULES.md">AI_COMMON_RULES.md</option>
+                        <option value="PATTERNS.md">PATTERNS.md</option>
+                        <option value="PROJECT_STATE.md">PROJECT_STATE.md</option>
+                        <option value="HARNESS_SPEC.md">HARNESS_SPEC.md</option>
+                    </select>
+                    <button onclick="saveFile()" class="bg-blue-600 text-white px-4 py-1 rounded hover:bg-blue-700 transition text-sm font-medium">Save Changes</button>
+                </div>
+            </header>
+
+            <!-- Tab Contents -->
+            <div class="flex-1 overflow-auto p-8">
+                <!-- Rules Tab -->
+                <section id="tab-rules" class="tab-content h-full flex flex-col">
+                    <textarea id="editor" class="flex-1 w-full p-6 code-font text-sm border border-gray-200 rounded-lg shadow-inner focus:ring-2 focus:ring-blue-500 outline-none resize-none bg-white" spellcheck="false"></textarea>
+                </section>
+
+                <!-- State Tab -->
+                <section id="tab-state" class="tab-content hidden space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="state-cards">
+                        <!-- Cards will be injected here -->
+                    </div>
+                </section>
+
+                <!-- Integrations Tab -->
+                <section id="tab-integrations" class="tab-content hidden grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                        <div class="flex justify-between items-start mb-4">
+                            <h3 class="font-bold text-red-600 uppercase text-sm">Sentry Issues</h3>
+                            <span id="sentry-count" class="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded">No Data</span>
+                        </div>
+                        <div id="sentry-list" class="space-y-3 text-sm text-gray-500 italic">
+                            연동된 Sentry 데이터가 없습니다.
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                        <div class="flex justify-between items-start mb-4">
+                            <h3 class="font-bold text-blue-600 uppercase text-sm">Security Audit</h3>
+                            <span id="audit-status" class="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded">No Scan</span>
+                        </div>
+                        <div id="audit-list" class="space-y-2 text-sm text-gray-500 italic">
+                            실행된 보안 스캔 결과가 없습니다.
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Logs Tab -->
+                <section id="tab-logs" class="tab-content hidden bg-gray-900 rounded-lg p-6 h-full overflow-auto">
+                    <div id="log-console" class="code-font text-green-400 text-sm space-y-1">
+                        <div class="text-gray-500 italic">실시간 하네스 로그를 대기 중입니다...</div>
+                        <div class="animate-pulse">_</div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        let currentTab = 'rules';
+
+        function showTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+            
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('bg-blue-50', 'text-blue-600', 'font-semibold', 'border-l-4', 'border-blue-600'));
+            document.getElementById(`btn-${tabId}`).classList.add('bg-blue-50', 'text-blue-600', 'font-semibold', 'border-l-4', 'border-blue-600');
+            
+            document.getElementById('tab-title').innerText = tabId.replace(/-/g, ' ');
+            document.getElementById('file-selector').style.display = (tabId === 'rules') ? 'flex' : 'none';
+            
+            currentTab = tabId;
+            if (tabId === 'state') loadState();
+            if (tabId === 'integrations') loadIntegrations();
+        }
+
+        async function loadIntegrations() {
+            const res = await fetch('/api/files?name=SECURITY_AUDIT.md');
+            if (res.ok) {
+                const data = await res.json();
+                const text = data.content;
+                
+                // Parse Status
+                const statusMatch = text.match(/- \*\*Status\*\*: (.*)/);
+                if (statusMatch) {
+                    const statusText = statusMatch[1];
+                    document.getElementById('audit-status').innerText = statusText;
+                    if (statusText.includes('SAFE')) {
+                        document.getElementById('audit-status').className = "bg-green-100 text-green-600 text-xs px-2 py-1 rounded";
+                    } else if (statusText.includes('AT RISK')) {
+                        document.getElementById('audit-status').className = "bg-red-100 text-red-600 text-xs px-2 py-1 rounded";
+                    }
+                }
+
+                // Parse Details
+                const detailsSection = text.split('## Details')[1];
+                if (detailsSection) {
+                    document.getElementById('audit-list').innerHTML = detailsSection.split('\n')
+                        .filter(l => l.trim().startsWith('-'))
+                        .map(l => `<div class="p-2 bg-gray-50 rounded text-xs">${l.replace('-', '').trim()}</div>`)
+                        .join('');
+                }
+            }
+        }
+
+        async function loadFile() {
+            const fileName = document.getElementById('select-file').value;
+            const res = await fetch(`/api/files?name=${fileName}`);
+            const data = await res.json();
+            document.getElementById('editor').value = data.content;
+        }
+
+        async function saveFile() {
+            const fileName = document.getElementById('select-file').value;
+            const content = document.getElementById('editor').value;
+            const res = await fetch('/api/files', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: fileName, content })
+            });
+            if (res.ok) {
+                alert('Saved successfully!');
+                if (fileName === 'PROJECT_STATE.md') loadState();
+            }
+        }
+
+        async function loadState() {
+            const res = await fetch('/api/files?name=PROJECT_STATE.md');
+            const data = await res.json();
+            const text = data.content;
+            
+            const stateCards = document.getElementById('state-cards');
+            stateCards.innerHTML = '';
+
+            // Simple parser for markdown sections
+            const sections = text.split('## ').slice(1);
+            sections.forEach(section => {
+                const lines = section.split('\n');
+                const title = lines[0].trim();
+                const content = lines.slice(1).join('\n').trim();
+                
+                const card = document.createElement('div');
+                card.className = "bg-white p-6 rounded-xl border border-gray-200 shadow-sm";
+                card.innerHTML = `
+                    <h3 class="font-bold text-gray-500 uppercase text-xs mb-3 tracking-widest">${title}</h3>
+                    <div class="text-sm whitespace-pre-wrap text-gray-700">${content.replace(/```/g, '')}</div>
+                `;
+                stateCards.appendChild(card);
+            });
+        }
+
+        // Initialize
+        showTab('rules');
+        loadFile();
+    </script>
+</body>
+</html>

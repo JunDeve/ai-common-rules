@@ -1,0 +1,3 @@
+@echo off
+echo [INFO] AI Harness Control Center starting...
+node .ai/ui/server.js

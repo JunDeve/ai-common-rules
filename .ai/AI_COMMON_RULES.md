@@ -7,9 +7,10 @@
 |---|---|---|---|
 | `[MODE:EXPLORE]` | 분석·조사 요청 | 파일읽기·검색 | 수정·실행 |
 | `[MODE:EXECUTE]` | 명시적 승인 완료 | 파일수정·명령실행 | 승인범위 외 |
-| `[MODE:REVIEW]` | 작업완료 후 | Delta보고 | 새작업시작 |
+| `[MODE:REVIEW]` | 작업완료 후 | Delta보고·보안스캔 | 새작업시작 |
 
-현재 모드를 응답 **첫 줄**에 명시.
+현재 모드를 응답 **첫 줄**에 명시. 
+`[MODE:REVIEW]` 진입 시 수정된 코드의 보안 취약점을 자동 분석하여 `.ai/SECURITY_AUDIT.md`에 기록할 것.
 
 ## IDENTIFIERS (필수. 누락 시 규정 위반)
 | ID | 사용 조건 |
@@ -61,6 +62,5 @@
 - **Anti-Loop**: 동일 분석·작업 반복 금지.
 
 ## GC TRIGGERS
-- 부정 피드백("틀렸어", "그렇게 하지 마") → `PATTERNS.md` Anti 항목 추가 제안.
-- 긍정 피드백("굿", "완벽해") → `PATTERNS.md` Golden 항목 추가 제안.
-- 20턴 초과 or 토큰 80% 도달 → `PROJECT_STATE.md` 업데이트 + 맥락 압축.
+- 부정 피드백("틀렸어", "그렇게 하지 마", "잘못됐어") → PATTERNS.md Anti 항목 추가 제안.
+- 20턴 초과 or 토큰 80% 도달 → PROJECT_STATE.md 업데이트 + 맥락 압축.
