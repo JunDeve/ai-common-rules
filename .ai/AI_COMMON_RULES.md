@@ -1,6 +1,9 @@
-# AI AGENT CORE RULES v3.0
-<!-- RUNTIME LAYER: .ai/ 폴더에서 관리. 에이전트 세션 시작 시 최우선 주입. Immutable. [2026-04-24] -->
-<!-- 세션 시작 시 .ai/PATTERNS.md + .ai/PROJECT_STATE.md 를 이어서 읽을 것. -->
+# AI AGENT CORE RULES v4.0
+<!-- RUNTIME LAYER: .ai/ 폴더에서 관리. 에이전트 세션 시작 시 최우선 주입. Immutable. [2026-05-08] -->
+<!-- 세션 시작 시 주입 순서: [TIER:CORE] → [TIER:CONTEXT] → [TIER:ON-DEMAND] -->
+<!-- TIER:CORE = 이 파일 전체 (~600토큰) -->
+<!-- TIER:CONTEXT = PATTERNS.md의 Sev=C/H 항목 + PROJECT_STATE ACTIVE 슬롯만 (~400토큰) -->
+<!-- TIER:ON-DEMAND = Sev=M/L 패턴·ARCHIVE 슬롯·HARNESS_SPEC 상세 (키워드 트리거 시만 로드) -->
 
 ## MODES
 | Mode | Trigger | Allow | Block |
@@ -49,11 +52,26 @@
 - **PII Masking**: 개인정보 → `[MASKED]`.
 - **Network**: 외부요청 전 목적지·전송데이터 사전 고지.
 
+## NO-TOUCH ZONE
+`PROJECT_STATE.md`의 **슬롯 6: 금지 구역** 항목은 어떤 모드·상황에서도 수정·삭제·실행 금지.
+위반 시 → `[CRITICAL]` 즉시 발생. 사용자 명시적 재승인 없이 진행 불가.
+
 ## APPROVAL WORKFLOW
 **Before Action 보고 필수:** 목적 / 대상파일·범위 / 영향도 / 보안체크  
 **승인 전:** `[PLAN]`·`[QUESTION]`만. `[INFO]`(완료의미) 금지.  
 **실행 중:** `[MODE:EXECUTE]` 명시.  
 **완료 후:** `[MODE:REVIEW]` + Delta만.
+
+## AUTO-UPDATE (별도 승인 불필요)
+`[MODE:REVIEW]` 진입 시 아래 항목은 사용자 승인 없이 자동 갱신:
+- 슬롯 4(다음 할 일): 완료된 액션 체크 표시 `[x]`
+- 슬롯 5(AI 준수율): Rate·위반 ID 갱신
+
+아래 항목은 반드시 사용자 승인 후 갱신:
+- 슬롯 1(현재 작업): 작업 내용·단계 변경
+- 슬롯 2(결정사항): 신규 결정 추가
+- 슬롯 3(위험요소): 신규 위험요소 추가
+- 슬롯 6(금지 구역): 절대 자동 변경 금지
 
 ## QUALITY
 - **Evidence-Based**: 코드·로그·문서 기반 추론만.
@@ -61,6 +79,18 @@
 - **Logical Atomicity**: 1 Turn = 1 논리적 목적.
 - **Anti-Loop**: 동일 분석·작업 반복 금지.
 
+## DELTA REPORT FORMAT
+`[MODE:REVIEW]` 완료 보고는 반드시 아래 구조화 diff 형식 사용. 자유서술 금지.
+```
+[MODE:REVIEW] Δ
++ {파일} L{n}: {추가 내용 한 줄}
+~ {파일} L{n}: {변경 내용 한 줄}
+- {파일} L{n}: {삭제 내용 한 줄} (없으면 생략)
+Risk: H/M/L / Files: N
+```
+
 ## GC TRIGGERS
 - 부정 피드백("틀렸어", "그렇게 하지 마", "잘못됐어") → PATTERNS.md Anti 항목 추가 제안.
-- 20턴 초과 or 토큰 80% 도달 → PROJECT_STATE.md 업데이트 + 맥락 압축.
+- PROJECT_STATE ACTIVE 슬롯 항목이 7일 초과 → ARCHIVE로 이동 제안.
+
+---
