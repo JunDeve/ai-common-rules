@@ -11,6 +11,8 @@
 
 ```
 ai-common-rules/
+├── .claude-plugin/
+│   └── plugin.json                    ← 플러그인 매니페스트 (데스크탑 앱 업로드 시 필수)
 ├── CLAUDE.md                          ← 플러그인 활성화 시 하네스 규칙 자동 주입
 ├── .ai/                               ← 하네스 소스 (편집 대상)
 │   ├── AI_COMMON_RULES.md             ← 행동 규칙, 식별자, 모드, 보안, 토큰 압축
@@ -26,7 +28,9 @@ ai-common-rules/
 
 ## 설치
 
-Claude Code 내에서 1회 실행 (클론한 경로 지정):
+### A — Claude Code CLI
+
+클론 후 Claude Code 내에서 1회 실행:
 ```
 /plugin add <ai-common-rules 경로>
 ```
@@ -35,6 +39,20 @@ Claude Code 내에서 1회 실행 (클론한 경로 지정):
 ```
 /plugin enable ai-common-rules
 ```
+
+### B — Claude 데스크탑 앱 (Customize → 플러그인 업로드)
+
+1. 이 저장소 클론
+2. 폴더 전체를 zip으로 압축 (`.claude-plugin/plugin.json` 포함 필수)
+3. Claude 데스크탑 → **Code** 탭 → **Customize** → **개인 플러그인 +** → **플러그인 업로드**
+4. `.zip` 파일 업로드
+
+압축 명령어 (PowerShell):
+```powershell
+Compress-Archive -Path "<ai-common-rules 경로>\*" -DestinationPath "ai-common-rules.zip"
+```
+
+업로드 완료 후 사이드바 **개인 플러그인** 아래에 표시됨 → 거기서 ON/OFF 토글 가능.
 
 ---
 

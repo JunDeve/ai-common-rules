@@ -11,6 +11,8 @@ Planning and task tracking are delegated to Claude Code's built-in features (Pla
 
 ```
 ai-common-rules/
+├── .claude-plugin/
+│   └── plugin.json                    ← Plugin manifest (required for Desktop app upload)
 ├── CLAUDE.md                          ← Harness rules injected when plugin is enabled
 ├── .ai/                               ← Harness source files (edit here)
 │   ├── AI_COMMON_RULES.md             ← Behavior rules, identifiers, modes, security, token compression
@@ -26,7 +28,9 @@ ai-common-rules/
 
 ## Installation
 
-Run once inside Claude Code (specify the path where this repo was cloned):
+### Option A — Claude Code CLI
+
+Clone this repo, then run once inside Claude Code:
 ```
 /plugin add <path-to-ai-common-rules>
 ```
@@ -35,6 +39,20 @@ Enable:
 ```
 /plugin enable ai-common-rules
 ```
+
+### Option B — Claude Desktop App (Customize → Plugin Upload)
+
+1. Clone this repo
+2. Zip the entire folder contents (must include `.claude-plugin/plugin.json`)
+3. Open Claude Desktop → **Code** tab → **Customize** → **개인 플러그인 +** → **플러그인 업로드**
+4. Upload the `.zip` file
+
+Quick zip command (PowerShell):
+```powershell
+Compress-Archive -Path "<path-to-ai-common-rules>\*" -DestinationPath "ai-common-rules.zip"
+```
+
+Once uploaded, the plugin appears under **개인 플러그인** in the sidebar — toggle ON/OFF from there.
 
 ---
 

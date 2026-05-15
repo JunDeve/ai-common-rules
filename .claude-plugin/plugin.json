@@ -1,0 +1,13 @@
+{
+  "name": "ai-common-rules",
+  "version": "2.0.0",
+  "description": "Harness (behavior rules) + skills for Claude Code. Enforces MODE system, identifiers, security guardrails, and token compression.",
+  "author": {
+    "name": "JunDeve",
+    "url": "https://github.com/JunDeve/ai-common-rules"
+  },
+  "homepage": "https://github.com/JunDeve/ai-common-rules",
+  "repository": "https://github.com/JunDeve/ai-common-rules",
+  "license": "MIT",
+  "keywords": ["harness", "rules", "security", "skills", "workflow"]
+}
