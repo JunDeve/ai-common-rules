@@ -1,7 +1,0 @@
-{
-  "name": "ai-harness",
-  "version": "3.0.0",
-  "scripts": {
-    "start": "node .ai/ui/server.js"
-  }
-}

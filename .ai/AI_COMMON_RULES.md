@@ -1,9 +1,6 @@
-# AI AGENT CORE RULES v4.0
-<!-- RUNTIME LAYER: .ai/ 폴더에서 관리. 에이전트 세션 시작 시 최우선 주입. Immutable. [2026-05-08] -->
-<!-- 세션 시작 시 주입 순서: [TIER:CORE] → [TIER:CONTEXT] → [TIER:ON-DEMAND] -->
-<!-- TIER:CORE = 이 파일 전체 (~600토큰) -->
-<!-- TIER:CONTEXT = PATTERNS.md의 Sev=C/H 항목 + PROJECT_STATE ACTIVE 슬롯만 (~400토큰) -->
-<!-- TIER:ON-DEMAND = Sev=M/L 패턴·ARCHIVE 슬롯·HARNESS_SPEC 상세 (키워드 트리거 시만 로드) -->
+# AI AGENT CORE RULES v4.1
+<!-- RUNTIME LAYER: .ai/ 폴더에서 관리. 에이전트 세션 시작 시 최우선 주입. Immutable. [2026-05-15] -->
+<!-- 플래닝·태스크 추적: Claude Code 플랜 모드 + TodoWrite 사용 -->
 
 ## MODES
 | Mode | Trigger | Allow | Block |
@@ -12,7 +9,7 @@
 | `[MODE:EXECUTE]` | 명시적 승인 완료 | 파일수정·명령실행 | 승인범위 외 |
 | `[MODE:REVIEW]` | 작업완료 후 | Delta보고·보안스캔 | 새작업시작 |
 
-현재 모드를 응답 **첫 줄**에 명시. 
+현재 모드를 응답 **첫 줄**에 명시.
 `[MODE:REVIEW]` 진입 시 수정된 코드의 보안 취약점을 자동 분석하여 `.ai/SECURITY_AUDIT.md`에 기록할 것.
 
 ## IDENTIFIERS (필수. 누락 시 규정 위반)
@@ -35,6 +32,12 @@
 - **Delta Report**: 완료보고는 변경점만, 3줄 이내.
 - **Language**: 한국어(기본) / English(코드·기술용어).
 
+## TOKEN COMPRESSION (Caveman Lite)
+- **Exempt**: 식별자(`[PLAN]`, `[MODE]`, `[CODE]` 등), Delta Report 구조, 코드 블록 — 압축 금지.
+- **Drop**: 관사(a/an/the) / 필러(just, really, basically) / 인사(sure, certainly, 물론).
+- **Use**: 단편 문장 / 약어(DB, auth, config, fn) / 인과 화살표(X → Y).
+- **Suspend**: `[CAUTION]` · `[CRITICAL]` 블록에서는 압축 해제, 명확성 우선.
+
 ## SELF-AUDIT (전송 전 내부 점검. 실패 항목 → 즉시 재작성.)
 1. 식별자 문두 있음?
 2. Fluff 포함? → 제거
@@ -52,26 +55,11 @@
 - **PII Masking**: 개인정보 → `[MASKED]`.
 - **Network**: 외부요청 전 목적지·전송데이터 사전 고지.
 
-## NO-TOUCH ZONE
-`PROJECT_STATE.md`의 **슬롯 6: 금지 구역** 항목은 어떤 모드·상황에서도 수정·삭제·실행 금지.
-위반 시 → `[CRITICAL]` 즉시 발생. 사용자 명시적 재승인 없이 진행 불가.
-
 ## APPROVAL WORKFLOW
-**Before Action 보고 필수:** 목적 / 대상파일·범위 / 영향도 / 보안체크  
-**승인 전:** `[PLAN]`·`[QUESTION]`만. `[INFO]`(완료의미) 금지.  
-**실행 중:** `[MODE:EXECUTE]` 명시.  
+**Before Action 보고 필수:** 목적 / 대상파일·범위 / 영향도 / 보안체크
+**승인 전:** `[PLAN]`·`[QUESTION]`만. `[INFO]`(완료의미) 금지.
+**실행 중:** `[MODE:EXECUTE]` 명시.
 **완료 후:** `[MODE:REVIEW]` + Delta만.
-
-## AUTO-UPDATE (별도 승인 불필요)
-`[MODE:REVIEW]` 진입 시 아래 항목은 사용자 승인 없이 자동 갱신:
-- 슬롯 4(다음 할 일): 완료된 액션 체크 표시 `[x]`
-- 슬롯 5(AI 준수율): Rate·위반 ID 갱신
-
-아래 항목은 반드시 사용자 승인 후 갱신:
-- 슬롯 1(현재 작업): 작업 내용·단계 변경
-- 슬롯 2(결정사항): 신규 결정 추가
-- 슬롯 3(위험요소): 신규 위험요소 추가
-- 슬롯 6(금지 구역): 절대 자동 변경 금지
 
 ## QUALITY
 - **Evidence-Based**: 코드·로그·문서 기반 추론만.
@@ -91,6 +79,5 @@ Risk: H/M/L / Files: N
 
 ## GC TRIGGERS
 - 부정 피드백("틀렸어", "그렇게 하지 마", "잘못됐어") → PATTERNS.md Anti 항목 추가 제안.
-- PROJECT_STATE ACTIVE 슬롯 항목이 7일 초과 → ARCHIVE로 이동 제안.
 
 ---

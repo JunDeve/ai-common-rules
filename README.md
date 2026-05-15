@@ -1,41 +1,118 @@
-# AI Agent Harness Infrastructure
+# ai-common-rules
 
-AI 에이전트의 자율적 엔지니어링을 제어하고 품질을 보증하기 위한 하드닝 인프라입니다. 본 프레임워크는 에이전트의 인지 부하를 관리하고, 보안 가드레일을 강제하며, 프로젝트의 상태를 영속적으로 유지하는 것을 목적으로 합니다.
+**Claude Code only.** A plugin that controls a harness (behavior rules) + skills (task tools) from one place.
+Planning and task tracking are delegated to Claude Code's built-in features (Plan Mode, TodoWrite).
 
----
-
-## 핵심 아키텍처
-
-### 1. Runtime Layer (Agent Intelligence)
-에이전트가 세션 시작 시 최우선적으로 주입받는 규칙 및 데이터 세트입니다.
-*   **AI_COMMON_RULES**: 에이전트의 행동 모드(Explore/Execute/Review) 및 출력 규격을 정의하는 핵심 헌법입니다.
-*   **PATTERNS**: 사용자의 비판적 피드백을 기반으로 축적된 안티 패턴 데이터베이스입니다. 동일한 논리적 오류의 재발을 방지합니다.
-*   **PROJECT_STATE**: 현재 활성 태스크, 확정된 설계 결정, 알려진 리스크를 담은 상태 스냅샷입니다.
-
-### 2. Monitoring & Control Layer
-하네스의 상태를 시각화하고 외부 시스템과의 통합을 관리하는 인터페이스입니다.
-*   **Harness Control Center**: .ai 디렉토리의 마크다운 파일을 기반으로 구동되는 초경량 웹 대시보드입니다.
-*   **Security Auto-Scan**: 코드 수정 완료 시점에 에이전트가 수행하는 자동 정적 분석 및 취약점 리포팅 시스템입니다.
+> 한국어 문서: [README.ko.md](README.ko.md)
 
 ---
 
-## 실행 및 관리
+## Structure
 
-### 대시보드 구동
-로컬 환경에서 제어 센터를 가동하기 위해 다음 명령어를 사용합니다.
-```powershell
-npm start
 ```
-*   가용 포트: 3000
-*   웹 인터페이스: http://localhost:3000
-
-### 프로젝트 초기화 가이드
-새로운 태스크를 시작하기 전, `.ai/PROJECT_STATE.md` 파일의 다음 항목을 현행화하십시오.
-1.  **Active Task**: 현재 수행할 구체적인 마일스톤 설정.
-2.  **Next Actions**: 향후 단계별 로드맵 정의.
-3.  **Known Risks**: 분석 단계에서 식별된 기술적 제약 사항 기록.
+ai-common-rules/
+├── CLAUDE.md                          ← Harness rules injected when plugin is enabled
+├── .ai/                               ← Harness source files (edit here)
+│   ├── AI_COMMON_RULES.md             ← Behavior rules, identifiers, modes, security, token compression
+│   └── PATTERNS.md                    ← Anti-pattern DB (accumulated from negative feedback)
+└── skills/
+    ├── grill-me/
+    │   └── SKILL.md                   ← /grill-me slash command
+    └── improve-codebase-architecture/
+        └── SKILL.md                   ← /improve-codebase-architecture slash command
+```
 
 ---
 
-## 에이전트 가이드라인
-본 프로젝트에 접근하는 모든 AI 에이전트는 `.ai/` 디렉토리 내의 규칙을 Immutable(불변) 지침으로 간주해야 합니다. 모든 응답은 정의된 IDENTIFIERS를 문두에 명시해야 하며, 승인되지 않은 파괴적 작업은 엄격히 금지됩니다.
+## Installation
+
+Run once inside Claude Code (specify the path where this repo was cloned):
+```
+/plugin add <path-to-ai-common-rules>
+```
+
+Enable:
+```
+/plugin enable ai-common-rules
+```
+
+---
+
+## Control
+
+### Harness + Skills
+
+| Command | Effect |
+|---|---|
+| `/plugin enable ai-common-rules` | Harness rules ON + skills available |
+| `/plugin disable ai-common-rules` | Everything OFF |
+
+### Skills (on-demand only)
+
+| Command | Purpose |
+|---|---|
+| `/grill-me` | Stress-test a plan before submitting `[PLAN]`. Walks the decision tree one question at a time. |
+| `/improve-codebase-architecture` | Analyze codebase structure. Detect shallow modules → propose deep refactors → collaborative design. |
+
+Skills are slash commands — inactive until invoked.
+
+---
+
+## Harness Rules (AI_COMMON_RULES.md)
+
+Injected into every session when the plugin is enabled.
+
+### MODE System
+| Mode | Allow | Block |
+|---|---|---|
+| `[MODE:EXPLORE]` | File reads, search | Edits, execution |
+| `[MODE:EXECUTE]` | File edits, command execution | Anything outside approved scope |
+| `[MODE:REVIEW]` | Delta report, security scan | Starting new work |
+
+Current mode must be declared on the **first line** of every response.
+
+### Identifiers (required on first line)
+| Identifier | When to use |
+|---|---|
+| `[PLAN]` | Unexecuted plan, awaiting approval |
+| `[ANALYSIS]` | Evidence, analysis, RCA, trade-offs |
+| `[CODE]` | Implementation, patch |
+| `[INFO]` | Status, general info |
+| `[QUESTION]` | Requesting user decision |
+| `[CAUTION]` | Before destructive action, re-approval required |
+| `[CRITICAL]` | Security threat, immediate stop |
+
+### Security Guardrails
+- API keys and secrets must never be printed → `[MASKED]`
+- System path access blocked → `[CRITICAL]`
+- 5+ files affected → `[CAUTION]` + Git checkpoint recommended
+- Delete or overwrite requires `[CAUTION]` + re-approval
+
+### Token Compression — Caveman Lite
+Lightweight compression rules adapted from [Caveman](https://github.com/JuliusBrussee/caveman) by Julius Brussee,
+modified to avoid conflicts with harness identifiers, Delta Report format, and code blocks.
+
+- Drop articles (a/an/the), fillers (just, really, basically), pleasantries (sure, certainly)
+- Use fragments, abbreviations (DB, auth, config, fn), causal arrows (X → Y)
+- Suspend compression inside `[CAUTION]` · `[CRITICAL]` blocks — clarity first
+
+### Anti-Pattern Accumulation (PATTERNS.md)
+On negative feedback ("that's wrong", "don't do that"), propose adding an entry to PATTERNS.md.
+Items with Hits ≥ 3 are reviewed for tier promotion.
+
+---
+
+## Planning & Task Tracking
+
+No separate state file. Uses Claude Code built-ins:
+
+| Role | Tool |
+|---|---|
+| Planning | Claude Code Plan Mode |
+| Task tracking | TodoWrite |
+| Design validation | `/grill-me` |
+| Architecture improvement | `/improve-codebase-architecture` |
+
+On first run of `/improve-codebase-architecture`, these are auto-created in your project:
+- `CONTEXT.md` — domain glossary
+- `docs/adr/` — architecture decision records

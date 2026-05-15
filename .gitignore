@@ -2,17 +2,8 @@
 .DS_Store
 Thumbs.db
 
-# Node.js
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
-
-# AI Harness Temporary / Logs
-.ai/ui/logs/
-*.log
-.ai/SECURITY_AUDIT.md # 매번 바뀌는 리포트는 로컬에서만 확인하도록 제외 가능 (선택사항)
+# AI Harness — 세션별 생성 파일 (공유 불가)
+.ai/SECURITY_AUDIT.md
 
 # Environments
 .env

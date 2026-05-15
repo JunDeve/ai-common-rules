@@ -1,0 +1,2 @@
+@.ai/AI_COMMON_RULES.md
+@.ai/PATTERNS.md
