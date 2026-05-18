@@ -13,10 +13,7 @@
 ai-common-rules/
 ├── .claude-plugin/
 │   └── plugin.json                    ← 플러그인 매니페스트 (데스크탑 앱 업로드 시 필수)
-├── CLAUDE.md                          ← 플러그인 활성화 시 하네스 규칙 자동 주입
-├── .ai/                               ← 하네스 소스 (편집 대상)
-│   ├── AI_COMMON_RULES.md             ← 행동 규칙, 식별자, 모드, 보안, 토큰 압축
-│   └── PATTERNS.md                    ← 안티패턴 DB (부정 피드백 발생 시 누적)
+├── CLAUDE.md                          ← 하네스 규칙 전체 (단일 소스, 플러그인 활성화 시 자동 주입)
 └── skills/
     ├── grill-me/
     │   └── SKILL.md                   ← /grill-me 슬래시 커맨드
@@ -76,7 +73,7 @@ Compress-Archive -Path "<ai-common-rules 경로>\*" -DestinationPath "ai-common-
 
 ---
 
-## 하네스 규칙 (AI_COMMON_RULES.md)
+## 하네스 규칙 (CLAUDE.md)
 
 플러그인 활성화 시 매 세션 자동 주입되는 행동 헌법.
 
@@ -114,8 +111,8 @@ Compress-Archive -Path "<ai-common-rules 경로>\*" -DestinationPath "ai-common-
 - 단편 문장, 약어(DB, auth, config, fn), 인과 화살표(X → Y) 사용
 - `[CAUTION]`·`[CRITICAL]` 블록에서는 압축 해제, 명확성 우선
 
-### 안티패턴 누적 (PATTERNS.md)
-부정 피드백("틀렸어", "그렇게 하지 마") 수신 시 PATTERNS.md에 항목 추가 제안.
+### 안티패턴 누적 (CLAUDE.md)
+부정 피드백("틀렸어", "그렇게 하지 마") 수신 시 CLAUDE.md PATTERNS 섹션에 항목 추가 제안.
 Hits ≥ 3 항목은 Tier 승급 검토.
 
 ---

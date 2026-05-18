@@ -13,10 +13,7 @@ Planning and task tracking are delegated to Claude Code's built-in features (Pla
 ai-common-rules/
 ├── .claude-plugin/
 │   └── plugin.json                    ← Plugin manifest (required for Desktop app upload)
-├── CLAUDE.md                          ← Harness rules injected when plugin is enabled
-├── .ai/                               ← Harness source files (edit here)
-│   ├── AI_COMMON_RULES.md             ← Behavior rules, identifiers, modes, security, token compression
-│   └── PATTERNS.md                    ← Anti-pattern DB (accumulated from negative feedback)
+├── CLAUDE.md                          ← Harness rules injected when plugin is enabled (single source of truth)
 └── skills/
     ├── grill-me/
     │   └── SKILL.md                   ← /grill-me slash command
@@ -76,7 +73,7 @@ Skills are slash commands — inactive until invoked.
 
 ---
 
-## Harness Rules (AI_COMMON_RULES.md)
+## Harness Rules (CLAUDE.md)
 
 Injected into every session when the plugin is enabled.
 
@@ -114,8 +111,8 @@ modified to avoid conflicts with harness identifiers, Delta Report format, and c
 - Use fragments, abbreviations (DB, auth, config, fn), causal arrows (X → Y)
 - Suspend compression inside `[CAUTION]` · `[CRITICAL]` blocks — clarity first
 
-### Anti-Pattern Accumulation (PATTERNS.md)
-On negative feedback ("that's wrong", "don't do that"), propose adding an entry to PATTERNS.md.
+### Anti-Pattern Accumulation (CLAUDE.md)
+On negative feedback ("that's wrong", "don't do that"), propose adding an entry to the PATTERNS section in CLAUDE.md.
 Items with Hits ≥ 3 are reviewed for tier promotion.
 
 ---
