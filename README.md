@@ -17,8 +17,10 @@ ai-common-rules/
 └── skills/
     ├── grill-me/
     │   └── SKILL.md                   ← /grill-me slash command
-    └── improve-codebase-architecture/
-        └── SKILL.md                   ← /improve-codebase-architecture slash command
+    ├── improve-codebase-architecture/
+    │   └── SKILL.md                   ← /improve-codebase-architecture slash command
+    └── frontend-design/
+        └── SKILL.md                   ← /frontend-design slash command
 ```
 
 ---
@@ -71,6 +73,20 @@ Once uploaded, the plugin appears under **Personal Plugins** in the sidebar — 
 | `/frontend-design` | Generate distinctive, production-grade UI. Commits to a bold aesthetic direction before coding — avoids generic AI aesthetics. |
 
 Skills are slash commands — inactive until invoked.
+
+**Usage examples:**
+
+```
+/grill-me                          # stress-test the current plan
+/improve-codebase-architecture     # find refactoring opportunities
+/frontend-design                   # then describe what you want to build
+```
+
+`/frontend-design` workflow:
+1. Invoke the skill, then describe your UI requirement (component, page, or full app)
+2. Claude commits to a bold aesthetic direction before writing any code
+3. Outputs production-ready HTML/CSS/JS or framework code (React, Vue, etc.)
+4. Each generation intentionally differs in fonts, color scheme, and layout — no two outputs look the same
 
 ### Playwright MCP (always-on)
 
@@ -147,6 +163,7 @@ No separate state file. Uses Claude Code built-ins:
 | Task tracking | TodoWrite |
 | Design validation | `/grill-me` |
 | Architecture improvement | `/improve-codebase-architecture` |
+| UI generation | `/frontend-design` |
 
 On first run of `/improve-codebase-architecture`, these are auto-created in your project:
 - `CONTEXT.md` — domain glossary
