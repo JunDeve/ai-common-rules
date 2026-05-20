@@ -68,6 +68,7 @@ Once uploaded, the plugin appears under **Personal Plugins** in the sidebar — 
 |---|---|
 | `/grill-me` | Stress-test a plan before submitting `[PLAN]`. Walks the decision tree one question at a time. |
 | `/improve-codebase-architecture` | Analyze codebase structure. Detect shallow modules → propose deep refactors → collaborative design. |
+| `/frontend-design` | Generate distinctive, production-grade UI. Commits to a bold aesthetic direction before coding — avoids generic AI aesthetics. |
 
 Skills are slash commands — inactive until invoked.
 
