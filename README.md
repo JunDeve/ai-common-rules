@@ -12,7 +12,7 @@ Planning and task tracking are delegated to Claude Code's built-in features (Pla
 ```
 ai-common-rules/
 ├── .claude-plugin/
-│   └── plugin.json                    ← Plugin manifest (required for Desktop app upload)
+│   └── plugin.json                    ← Plugin manifest + Playwright MCP auto-registration
 ├── CLAUDE.md                          ← Harness rules injected when plugin is enabled (single source of truth)
 └── skills/
     ├── grill-me/
@@ -41,7 +41,7 @@ Enable:
 
 1. Clone this repo
 2. Zip the entire folder contents (must include `.claude-plugin/plugin.json`)
-3. Open Claude Desktop → **Code** tab → **Customize** → **개인 플러그인 +** → **플러그인 업로드**
+3. Open Claude Desktop → **Code** tab → **Customize** → **Personal Plugins +** → **Upload Plugin**
 4. Upload the `.zip` file
 
 Quick zip command (PowerShell):
@@ -49,7 +49,7 @@ Quick zip command (PowerShell):
 Compress-Archive -Path "<path-to-ai-common-rules>\*" -DestinationPath "ai-common-rules.zip"
 ```
 
-Once uploaded, the plugin appears under **개인 플러그인** in the sidebar — toggle ON/OFF from there.
+Once uploaded, the plugin appears under **Personal Plugins** in the sidebar — toggle ON/OFF from there.
 
 ---
 
@@ -70,6 +70,19 @@ Once uploaded, the plugin appears under **개인 플러그인** in the sidebar �
 | `/improve-codebase-architecture` | Analyze codebase structure. Detect shallow modules → propose deep refactors → collaborative design. |
 
 Skills are slash commands — inactive until invoked.
+
+### Playwright MCP (always-on)
+
+Bundled in `plugin.json`. Starts automatically when the plugin is enabled — no separate install needed.
+
+| Tool category | Examples |
+|---|---|
+| Navigation | `browser_navigate`, `browser_navigate_back` |
+| Interaction | `browser_click`, `browser_fill`, `browser_type`, `browser_select_option` |
+| Inspection | `browser_snapshot` (accessibility tree, recommended), `browser_take_screenshot` |
+| Utilities | `browser_wait_for`, `browser_evaluate`, `browser_close` |
+
+Harness rules for Playwright MCP (snapshot priority, capability gating, security guardrails) are enforced via the `## PLAYWRIGHT MCP` section in `CLAUDE.md`.
 
 ---
 

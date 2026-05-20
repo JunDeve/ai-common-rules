@@ -55,6 +55,39 @@
 - **PII Masking**: 개인정보 → `[MASKED]`.
 - **Network**: 외부요청 전 목적지·전송데이터 사전 고지.
 
+## PLAYWRIGHT MCP
+<!-- @playwright/mcp 서버로 브라우저를 직접 실행·제어할 때 적용 -->
+<!-- 설치: claude mcp add playwright npx @playwright/mcp@latest -->
+
+### 인터랙션 모드 (우선순위 순)
+1. **Snapshot 모드** (기본·권장): `browser_snapshot` → ref 기반 클릭·입력
+   - 접근성 트리 사용. 비전 모델 불필요. 토큰 ~300 vs 스크린샷 ~4000.
+   - ref는 스냅샷 1회분만 유효 — 페이지 변경 후 반드시 재스냅샷.
+2. **Vision 모드** (opt-in `--caps=vision`): 좌표 기반 조작.
+   - 캔버스·SVG 등 접근성 트리 불가 UI에만 사용.
+
+### 표준 워크플로
+```
+browser_navigate(url)
+  → browser_snapshot()          # 상태 파악 필수
+  → browser_click/type/fill()   # ref 사용
+  → browser_snapshot()          # 변경 확인
+  → (반복)
+  → browser_close()             # 작업 후 반드시 종료
+```
+
+### Capability 활성화 규칙
+- 기본 core 툴만 사용. 추가 cap 활성화 전 목적 고지 + 사용자 승인.
+- `--caps=network`: 네트워크 감청·모킹 → `[CAUTION]` 필요
+- `--caps=storage`: 쿠키·토큰 접근 → `[CAUTION]` + `[MASKED]`
+- `--caps=unsafe` (`browser_run_code_unsafe`): **금지** `[CRITICAL]` (P01 참조)
+
+### 보안
+- `browser_evaluate`에 사용자 입력 직접 삽입 → `[CRITICAL]` (코드 인젝션, P02 참조)
+- 외부 URL 탐색 전 목적지·전송 데이터 고지 (SECURITY > Network 규칙 적용)
+- 개인정보·자격증명이 스냅샷/스크린샷에 포함될 경우 → `[MASKED]` 처리
+- 스크래핑 시: `robots.txt` 확인 고지 필수 / CAPTCHA 우회 → `[CRITICAL]`
+
 ## APPROVAL WORKFLOW
 **Before Action 보고 필수:** 목적 / 대상파일·범위 / 영향도 / 보안체크
 **승인 전:** `[PLAN]`·`[QUESTION]`만. `[INFO]`(완료의미) 금지.
@@ -93,6 +126,8 @@ Risk: H/M/L / Files: N
 |---|---|---|---|---|---|---|
 | **T03** | C | CORE | API Key·Token 내용 직접 출력 | `[MASKED]` 처리. 파일명만 언급. | 0 | - |
 | **T05** | C | CORE | `rm -rf`, `DROP TABLE` 등 위험 명령어 무단 실행 | `[CRITICAL]` 즉시 차단 및 사용자 고지 | 0 | - |
+| **P01** | C | CORE | `browser_run_code_unsafe` 무단 활성화 | `[CRITICAL]` 즉시 차단. 사용자 명시 승인 없이 `--caps=unsafe` 금지. | 0 | - |
+| **P02** | H | CONTEXT | `browser_evaluate`에 사용자 입력 직접 삽입 | 입력값 검증 후 파라미터화. `[CRITICAL]` 경고. | 0 | - |
 | **T01** | H | CONTEXT | 승인 없이 파일탐색·수정·실행 | `[PLAN]` 제시 → 사용자 승인 → `[MODE:EXECUTE]` 전환 | 0 | - |
 | **T02** | H | CONTEXT | 오류 발생 시 성공인 척 보고 | 즉시 `[INFO]` 또는 `[QUESTION]`으로 공유 + 대안 제시 | 0 | - |
 | **T04** | H | CONTEXT | 5개↑ 파일 영향 수정에 무경고 진행 | `[CAUTION] Blast Radius: N개 파일` 경고 후 재승인 | 0 | - |
@@ -109,6 +144,9 @@ Risk: H/M/L / Files: N
 | **S01** | M | ON-DEMAND | 여러 목적의 작업을 1 Turn에 혼재 | 논리 단위로 분리하여 각각 승인 후 진행 | 0 | - |
 | **S02** | L | ON-DEMAND | 파일 생성·수정 시 Docstring 누락 | 파일 상단에 역할·용도·수정일 기재 | 0 | - |
 | **S03** | M | ON-DEMAND | `[MODE:EXPLORE]`에서 파일 수정 시도 | 모드 전환 승인 먼저 요청 | 0 | - |
+| **P03** | H | ON-DEMAND | 페이지 변경 후 이전 스냅샷 ref 재사용 | 페이지 변경 후 `browser_snapshot()` 재호출 → 새 ref 사용 | 0 | - |
+| **P04** | M | ON-DEMAND | 작업 후 `browser_close()` 누락 | 모든 브라우저 세션 종료 시 명시적 `browser_close()` 호출 | 0 | - |
+| **P05** | M | ON-DEMAND | `--caps=storage` 활성화 시 쿠키·토큰 미마스킹 | 쿠키·토큰 값 출력 시 `[MASKED]` 처리 | 0 | - |
 
 ---
 
@@ -129,6 +167,14 @@ Git checkpoint 생성을 권고합니다. 계속 진행하시겠습니까?
 ~ middleware/session.js L12: pool size 10→20 변경
 - (없음)
 Risk: M / Files: 2
+
+[PLAN] 로그인 페이지 자동화 / 도구: Playwright MCP / Blast: 외부URL / Risk: M
+1. browser_navigate('https://example.com/login')
+2. browser_snapshot() → ref 확인
+3. browser_fill(email_ref, '[MASKED]') / browser_fill(pw_ref, '[MASKED]')
+4. browser_click(submit_ref)
+5. browser_snapshot() → 로그인 성공 여부 확인
+6. browser_close()
 ```
 
 ---

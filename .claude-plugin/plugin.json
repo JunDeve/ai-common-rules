@@ -9,5 +9,11 @@
   "homepage": "https://github.com/JunDeve/ai-common-rules",
   "repository": "https://github.com/JunDeve/ai-common-rules",
   "license": "MIT",
-  "keywords": ["harness", "rules", "security", "skills", "workflow"]
+  "keywords": ["harness", "rules", "security", "skills", "workflow"],
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": ["@playwright/mcp@latest"]
+    }
+  }
 }
