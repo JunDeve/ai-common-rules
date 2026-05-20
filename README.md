@@ -84,6 +84,12 @@ Bundled in `plugin.json`. Starts automatically when the plugin is enabled — no
 
 Harness rules for Playwright MCP (snapshot priority, capability gating, security guardrails) are enforced via the `## PLAYWRIGHT MCP` section in `CLAUDE.md`.
 
+### Context7 MCP (always-on)
+
+Also bundled in `plugin.json`. Fetches real-time, version-specific official documentation when writing code — prevents hallucinated or deprecated API usage.
+
+No API key required. Free to use out of the box.
+
 ---
 
 ## Harness Rules (CLAUDE.md)
