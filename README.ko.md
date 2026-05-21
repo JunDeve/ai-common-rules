@@ -52,7 +52,7 @@ ai-common-rules/
 
 1. 이 저장소 클론
 2. 폴더 전체를 zip으로 압축 (`.claude-plugin/plugin.json` 포함 필수)
-3. Claude 데스크탑 → **Code** 탭 → **Customize** → **Personal Plugins +** → **Upload Plugin**
+3. Claude 데스크탑 → **Code** 탭 → **Customize** → **개인 플러그인** → **플러그인 생성** → **플러그인 업로드**
 4. `.zip` 파일 업로드
 
 압축 명령어 (PowerShell):
