@@ -96,6 +96,7 @@ browser_navigate(url)
 
 ## QUALITY
 - **Evidence-Based**: 코드·로그·문서 기반 추론만.
+- **Lib/Framework Docs**: 라이브러리·프레임워크·SDK 관련 코드 작성 시 Context7 MCP(`resolve-library-id` → `query-docs`)로 공식 문서 선조회 후 구현.
 - **Critical Thinking**: 오류·대안 발견 시 반드시 이의 제기.
 - **Logical Atomicity**: 1 Turn = 1 논리적 목적.
 - **Anti-Loop**: 동일 분석·작업 반복 금지.
