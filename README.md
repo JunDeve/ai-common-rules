@@ -25,7 +25,9 @@
 ai-common-rules/
 ├── .claude-plugin/
 │   └── plugin.json                    ← Plugin manifest + bundled MCP servers (Playwright, Context7)
-├── CLAUDE.md                          ← Harness rules (single source of truth)
+├── CLAUDE.md                          ← Harness rules (always injected)
+├── PATTERNS.md                        ← M/L anti-patterns (on-demand, loaded on negative feedback)
+├── PLAYWRIGHT.md                      ← Playwright MCP rules (on-demand, loaded for browser tasks)
 └── skills/
     ├── grill-me/
     │   └── SKILL.md                   ← /grill-me slash command
@@ -77,17 +79,19 @@ Injected automatically into every session when the plugin is enabled. No invocat
 | `[MODE:EXECUTE]` | File edits, command execution | Anything outside approved scope |
 | `[MODE:REVIEW]` | Delta report, security scan | Starting new work |
 
-- **Response Identifiers** — Every response starts with a mandatory identifier so intent is always explicit
+- **Response Identifiers** — Required identifiers enforce explicit intent on critical actions; optional identifiers add clarity when helpful
+
+**Required (must be used when condition is met):**
 
 | Identifier | When used |
 |---|---|
 | `[PLAN]` | Unexecuted plan, awaiting user approval |
-| `[ANALYSIS]` | Evidence-based reasoning, RCA, trade-offs |
-| `[CODE]` | Implementation or patch |
-| `[INFO]` | Status update, general information |
-| `[QUESTION]` | Requesting a user decision |
 | `[CAUTION]` | Before any destructive action — re-approval required |
 | `[CRITICAL]` | Security threat — immediate stop |
+| `[CONFIDENCE:LOW]` | High reasoning uncertainty |
+
+**Optional (used when clarity is needed):**
+`[ANALYSIS]` `[CODE]` `[INFO]` `[QUESTION]` `[REF]`
 
 - **Approval Workflow** — Claude reports purpose, target files, blast radius, and security check before acting. Execution only starts after explicit user approval.
 
@@ -95,9 +99,9 @@ Injected automatically into every session when the plugin is enabled. No invocat
 
 - **Token Compression (Caveman Lite)** — Drops articles, fillers, and pleasantries. Uses fragments, abbreviations, and causal arrows. Suspended inside `[CAUTION]`/`[CRITICAL]` blocks for clarity.
 
-- **Anti-Pattern Tracking** — On negative feedback, Claude proposes adding the violation to the PATTERNS section. Items with Hits ≥ 3 are reviewed for tier promotion.
+- **Anti-Pattern Tracking** — On negative feedback, Claude reads `PATTERNS.md` directly and proposes adding the violation. Items with Hits ≥ 3 are reviewed for promotion to the always-on tier in `CLAUDE.md`.
 
-- **Playwright MCP Rules** — Snapshot-first workflow, capability gating, and security guardrails for all `browser_*` tool usage (see `## PLAYWRIGHT MCP` in `CLAUDE.md`).
+- **Playwright MCP Rules** — Snapshot-first workflow, capability gating, and security guardrails for all `browser_*` tool usage. Full rules in `PLAYWRIGHT.md` (loaded on-demand for browser tasks).
 
 ---
 

@@ -26,7 +26,9 @@
 ai-common-rules/
 ├── .claude-plugin/
 │   └── plugin.json                    ← 플러그인 매니페스트 + 번들 MCP 서버 (Playwright, Context7)
-├── CLAUDE.md                          ← 하네스 규칙 전체 (단일 소스)
+├── CLAUDE.md                          ← 하네스 규칙 (매 세션 자동 주입)
+├── PATTERNS.md                        ← M/L 안티패턴 (온디맨드, 부정 피드백 시 로드)
+├── PLAYWRIGHT.md                      ← Playwright MCP 규칙 (온디맨드, 브라우저 작업 시 로드)
 └── skills/
     ├── grill-me/
     │   └── SKILL.md                   ← /grill-me 슬래시 커맨드
@@ -78,17 +80,19 @@ Compress-Archive -Path "<ai-common-rules 경로>\*" -DestinationPath "ai-common-
 | `[MODE:EXECUTE]` | 파일 수정·명령 실행 | 승인 범위 외 모든 행동 |
 | `[MODE:REVIEW]` | Delta 보고·보안 스캔 | 새 작업 시작 |
 
-- **응답 식별자** — 모든 응답 첫 줄에 의도를 명확히 표시하는 식별자 필수.
+- **응답 식별자** — 중요 행동에는 필수 식별자로 의도 명시, 그 외에는 선택 식별자로 명확성 보완.
+
+**필수 (조건 충족 시 반드시 사용):**
 
 | 식별자 | 사용 조건 |
 |---|---|
 | `[PLAN]` | 미실행 계획, 사용자 승인 대기 |
-| `[ANALYSIS]` | 근거 기반 분석, RCA, trade-off |
-| `[CODE]` | 구현·수정·패치 |
-| `[INFO]` | 상태 업데이트, 일반 정보 |
-| `[QUESTION]` | 사용자 결정 요청 |
 | `[CAUTION]` | 파괴적 작업 전 경고 — 재승인 필수 |
 | `[CRITICAL]` | 보안 위협 — 즉시 중단 |
+| `[CONFIDENCE:LOW]` | 추론 불확실성 높음 |
+
+**선택 (명확성 필요 시 사용):**
+`[ANALYSIS]` `[CODE]` `[INFO]` `[QUESTION]` `[REF]`
 
 - **승인 워크플로우** — 실행 전 목적·대상 파일·영향 범위·보안 체크 보고 필수. 명시적 승인 후에만 실행 시작.
 
@@ -96,9 +100,9 @@ Compress-Archive -Path "<ai-common-rules 경로>\*" -DestinationPath "ai-common-
 
 - **토큰 압축 (Caveman Lite)** — 관사·필러·인사 제거. 단편 문장·약어·인과 화살표 사용. `[CAUTION]`/`[CRITICAL]` 블록에서는 압축 해제.
 
-- **안티패턴 누적** — 부정 피드백 수신 시 PATTERNS 섹션에 항목 추가 제안. Hits ≥ 3 항목은 Tier 승급 검토.
+- **안티패턴 누적** — 부정 피드백 수신 시 `PATTERNS.md`를 직접 읽어 항목 추가 제안. Hits ≥ 3 항목은 `CLAUDE.md` 항상 적용 티어 승급 검토.
 
-- **Playwright MCP 규칙** — Snapshot 우선 워크플로우, capability 게이팅, 보안 가드레일을 `CLAUDE.md`의 `## PLAYWRIGHT MCP` 섹션으로 자동 적용.
+- **Playwright MCP 규칙** — Snapshot 우선 워크플로우, capability 게이팅, 보안 가드레일 적용. 전체 규칙은 `PLAYWRIGHT.md`에 기재 (브라우저 작업 시 온디맨드 로드).
 
 ---
 
