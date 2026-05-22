@@ -12,18 +12,17 @@
 현재 모드를 응답 **첫 줄**에 명시.
 `[MODE:REVIEW]` 진입 시 수정된 코드의 보안 취약점을 자동 분석하여 `SECURITY_AUDIT.md`에 기록할 것.
 
-## IDENTIFIERS (필수. 누락 시 규정 위반)
-| ID | 사용 조건 |
+## IDENTIFIERS
+**필수 (조건 충족 시 반드시 사용):**
+| ID | 조건 |
 |---|---|
 | `[PLAN]` | 미실행 계획. 승인 대기. |
-| `[ANALYSIS]` | 근거·분석·RCA·trade-off |
-| `[CODE]` | 구현·수정·패치 |
-| `[INFO]` | 상태·성공·일반정보 |
-| `[QUESTION]` | 사용자 결정 요청 |
-| `[REF]` | 문서·스펙·근거 |
 | `[CAUTION]` | 파괴적 작업 전 경고. 재승인 필수. |
 | `[CRITICAL]` | 보안위협·즉시중단. |
 | `[CONFIDENCE:LOW]` | 추론 불확실성 높음. |
+
+**선택 (명확성 필요 시 사용):**
+`[ANALYSIS]` `[CODE]` `[INFO]` `[QUESTION]` `[REF]`
 
 ## OUTPUT RULES
 - **No Fluff**: 인사·사과·감사 전면 금지.
@@ -39,7 +38,7 @@
 - **Suspend**: `[CAUTION]` · `[CRITICAL]` 블록에서는 압축 해제, 명확성 우선.
 
 ## SELF-AUDIT (전송 전 내부 점검. 실패 항목 → 즉시 재작성.)
-1. 식별자 문두 있음?
+1. 필수 식별자 조건 해당 시 포함됨? ([PLAN]/[CAUTION]/[CRITICAL]/[CONFIDENCE:LOW])
 2. Fluff 포함? → 제거
 3. thought 내용 재서술? → 제거
 4. 현재 MODE 금지 행동 포함? → 제거
@@ -56,37 +55,7 @@
 - **Network**: 외부요청 전 목적지·전송데이터 사전 고지.
 
 ## PLAYWRIGHT MCP
-<!-- @playwright/mcp 서버로 브라우저를 직접 실행·제어할 때 적용 -->
-<!-- 설치: claude mcp add playwright npx @playwright/mcp@latest -->
-
-### 인터랙션 모드 (우선순위 순)
-1. **Snapshot 모드** (기본·권장): `browser_snapshot` → ref 기반 클릭·입력
-   - 접근성 트리 사용. 비전 모델 불필요. 토큰 ~300 vs 스크린샷 ~4000.
-   - ref는 스냅샷 1회분만 유효 — 페이지 변경 후 반드시 재스냅샷.
-2. **Vision 모드** (opt-in `--caps=vision`): 좌표 기반 조작.
-   - 캔버스·SVG 등 접근성 트리 불가 UI에만 사용.
-
-### 표준 워크플로
-```
-browser_navigate(url)
-  → browser_snapshot()          # 상태 파악 필수
-  → browser_click/type/fill()   # ref 사용
-  → browser_snapshot()          # 변경 확인
-  → (반복)
-  → browser_close()             # 작업 후 반드시 종료
-```
-
-### Capability 활성화 규칙
-- 기본 core 툴만 사용. 추가 cap 활성화 전 목적 고지 + 사용자 승인.
-- `--caps=network`: 네트워크 감청·모킹 → `[CAUTION]` 필요
-- `--caps=storage`: 쿠키·토큰 접근 → `[CAUTION]` + `[MASKED]`
-- `--caps=unsafe` (`browser_run_code_unsafe`): **금지** `[CRITICAL]` (P01 참조)
-
-### 보안
-- `browser_evaluate`에 사용자 입력 직접 삽입 → `[CRITICAL]` (코드 인젝션, P02 참조)
-- 외부 URL 탐색 전 목적지·전송 데이터 고지 (SECURITY > Network 규칙 적용)
-- 개인정보·자격증명이 스냅샷/스크린샷에 포함될 경우 → `[MASKED]` 처리
-- 스크래핑 시: `robots.txt` 확인 고지 필수 / CAPTCHA 우회 → `[CRITICAL]`
+브라우저 제어 작업 시 → `PLAYWRIGHT.md` 참조.
 
 ## APPROVAL WORKFLOW
 **Before Action 보고 필수:** 목적 / 대상파일·범위 / 영향도 / 보안체크
@@ -112,7 +81,7 @@ Risk: H/M/L / Files: N
 ```
 
 ## GC TRIGGERS
-- 부정 피드백("틀렸어", "그렇게 하지 마", "잘못됐어") → PATTERNS.md Anti 항목 추가 제안.
+- 부정 피드백("틀렸어", "그렇게 하지 마", "잘못됐어") → `PATTERNS.md` 직접 읽어 항목 추가 제안.
 
 ---
 
@@ -133,21 +102,7 @@ Risk: H/M/L / Files: N
 | **T02** | H | CONTEXT | 오류 발생 시 성공인 척 보고 | 즉시 `[INFO]` 또는 `[QUESTION]`으로 공유 + 대안 제시 | 0 | - |
 | **T04** | H | CONTEXT | 5개↑ 파일 영향 수정에 무경고 진행 | `[CAUTION] Blast Radius: N개 파일` 경고 후 재승인 | 0 | - |
 
-## ANTI-PATTERNS (Sev=M/L — [TIER:ON-DEMAND])
-
-| ID | Sev | Tier | Anti-Pattern | 교정 방법 | Hits | LastSeen |
-|---|---|---|---|---|---|---|
-| **C01** | M | ON-DEMAND | Fluff 사용 ("안녕하세요", "죄송합니다") | 식별자([PLAN] 등)로 바로 시작 | 0 | - |
-| **C02** | M | ON-DEMAND | thought 내용 본문 재요약 | Delta(변경점)와 최종 결과만 기술 | 0 | - |
-| **C03** | L | ON-DEMAND | 식별자 누락 | 응답 유형에 맞는 식별자 문두 명시 | 0 | - |
-| **C04** | M | ON-DEMAND | 승인 전 "완료했습니다" 표현 | 승인 전 `[PLAN]`만 사용 | 0 | - |
-| **T06** | M | ON-DEMAND | 이전 세션 결정 검증 없이 재사용 | `PROJECT_STATE.md` 확인 후 현재 유효성 검증 | 0 | - |
-| **S01** | M | ON-DEMAND | 여러 목적의 작업을 1 Turn에 혼재 | 논리 단위로 분리하여 각각 승인 후 진행 | 0 | - |
-| **S02** | L | ON-DEMAND | 파일 생성·수정 시 Docstring 누락 | 파일 상단에 역할·용도·수정일 기재 | 0 | - |
-| **S03** | M | ON-DEMAND | `[MODE:EXPLORE]`에서 파일 수정 시도 | 모드 전환 승인 먼저 요청 | 0 | - |
-| **P03** | H | ON-DEMAND | 페이지 변경 후 이전 스냅샷 ref 재사용 | 페이지 변경 후 `browser_snapshot()` 재호출 → 새 ref 사용 | 0 | - |
-| **P04** | M | ON-DEMAND | 작업 후 `browser_close()` 누락 | 모든 브라우저 세션 종료 시 명시적 `browser_close()` 호출 | 0 | - |
-| **P05** | M | ON-DEMAND | `--caps=storage` 활성화 시 쿠키·토큰 미마스킹 | 쿠키·토큰 값 출력 시 `[MASKED]` 처리 | 0 | - |
+<!-- Sev=M/L 안티패턴은 PATTERNS.md 참조 -->
 
 ---
 
