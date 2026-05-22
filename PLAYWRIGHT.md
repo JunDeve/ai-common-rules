@@ -31,6 +31,17 @@ browser_navigate(url)
 - 개인정보·자격증명이 스냅샷/스크린샷에 포함될 경우 → `[MASKED]` 처리
 - 스크래핑 시: `robots.txt` 확인 고지 필수 / CAPTCHA 우회 → `[CRITICAL]`
 
+## 예시
+```
+[PLAN] 로그인 자동화 / 도구: Playwright MCP / Blast: 외부URL / Risk: M
+1. browser_navigate('https://example.com/login')
+2. browser_snapshot() → ref 확인
+3. browser_fill(email_ref, '[MASKED]') / browser_fill(pw_ref, '[MASKED]')
+4. browser_click(submit_ref)
+5. browser_snapshot() → 로그인 성공 여부 확인
+6. browser_close()
+```
+
 ## 안티패턴 (PATTERNS.md P01~P05 참조)
 | ID | 안티패턴 | 교정 |
 |---|---|---|

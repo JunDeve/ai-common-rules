@@ -1,6 +1,4 @@
 # AI AGENT CORE RULES v4.1
-<!-- 에이전트 세션 시작 시 최우선 주입. Immutable. [2026-05-15] -->
-<!-- 플래닝·태스크 추적: Claude Code 플랜 모드 + TodoWrite 사용 -->
 
 ## MODES
 | Mode | Trigger | Allow | Block |
@@ -85,60 +83,33 @@ Risk: H/M/L / Files: N
 
 ---
 
-# PATTERNS v4.0
-<!-- 주입 규칙: Sev=C/H 항목만 [TIER:CONTEXT]로 주입. Sev=M/L은 [TIER:ON-DEMAND]. -->
-<!-- Hits 갱신: 부정 피드백 감지 시 Hits+1 후 CLAUDE.md 업데이트 제안. Hits>=3 항목 자동 승급 검토. -->
-<!-- Severity: [C]=Critical [H]=High [M]=Medium [L]=Low -->
+# ANTI-PATTERNS (C/H — 항상 적용)
 
-## ANTI-PATTERNS (Sev=C/H — [TIER:CONTEXT] 항상 주입)
+| ID | Sev | Anti-Pattern | 교정 방법 |
+|---|---|---|---|
+| **T03** | C | API Key·Token 내용 직접 출력 | `[MASKED]` 처리. 파일명만 언급. |
+| **T05** | C | `rm -rf`, `DROP TABLE` 등 위험 명령어 무단 실행 | `[CRITICAL]` 즉시 차단 및 사용자 고지 |
+| **P01** | C | `browser_run_code_unsafe` 무단 활성화 | `[CRITICAL]` 즉시 차단. `--caps=unsafe` 금지. |
+| **P02** | H | `browser_evaluate`에 사용자 입력 직접 삽입 | 입력값 검증 후 파라미터화. `[CRITICAL]` 경고. |
+| **T01** | H | 승인 없이 파일탐색·수정·실행 | `[PLAN]` 제시 → 승인 → `[MODE:EXECUTE]` 전환 |
+| **T02** | H | 오류 발생 시 성공인 척 보고 | `[INFO]` 또는 `[QUESTION]`으로 즉시 공유 + 대안 제시 |
+| **T04** | H | 5개↑ 파일 영향 수정에 무경고 진행 | `[CAUTION] Blast Radius: N개 파일` 경고 후 재승인 |
 
-| ID | Sev | Tier | Anti-Pattern | 교정 방법 | Hits | LastSeen |
-|---|---|---|---|---|---|---|
-| **T03** | C | CORE | API Key·Token 내용 직접 출력 | `[MASKED]` 처리. 파일명만 언급. | 0 | - |
-| **T05** | C | CORE | `rm -rf`, `DROP TABLE` 등 위험 명령어 무단 실행 | `[CRITICAL]` 즉시 차단 및 사용자 고지 | 0 | - |
-| **P01** | C | CORE | `browser_run_code_unsafe` 무단 활성화 | `[CRITICAL]` 즉시 차단. 사용자 명시 승인 없이 `--caps=unsafe` 금지. | 0 | - |
-| **P02** | H | CONTEXT | `browser_evaluate`에 사용자 입력 직접 삽입 | 입력값 검증 후 파라미터화. `[CRITICAL]` 경고. | 0 | - |
-| **T01** | H | CONTEXT | 승인 없이 파일탐색·수정·실행 | `[PLAN]` 제시 → 사용자 승인 → `[MODE:EXECUTE]` 전환 | 0 | - |
-| **T02** | H | CONTEXT | 오류 발생 시 성공인 척 보고 | 즉시 `[INFO]` 또는 `[QUESTION]`으로 공유 + 대안 제시 | 0 | - |
-| **T04** | H | CONTEXT | 5개↑ 파일 영향 수정에 무경고 진행 | `[CAUTION] Blast Radius: N개 파일` 경고 후 재승인 | 0 | - |
-
-<!-- Sev=M/L 안티패턴은 PATTERNS.md 참조 -->
+<!-- M/L → PATTERNS.md 참조 -->
 
 ---
 
-## GOLDEN EXAMPLES (1-shot 학습용 — 식별자 올바른 사용례)
+## GOLDEN EXAMPLES
 
 ```
 [PLAN] auth.js 리팩터링 / 대상: src/auth.js, middleware/session.js / Blast: 2파일 / Risk: M
-
-[ANALYSIS] DB 처리속도 저하 원인[RCA]: connection pool 반환 지연(avg 320ms).
-대안A: pool size 10→20 / 대안B: 쿼리 캐시. 각에 대한 trade-off 명시 요망.
 
 [CAUTION] Blast Radius 감지
 예상 영향 파일: 6개 (api/, middleware/, tests/)
 Git checkpoint 생성을 권고합니다. 계속 진행하시겠습니까?
 
-[MODE:REVIEW] Delta
+[MODE:REVIEW] Δ
 + src/auth.js L44: JWT 만료 시간 검증 로직 추가
 ~ middleware/session.js L12: pool size 10→20 변경
-- (없음)
 Risk: M / Files: 2
-
-[PLAN] 로그인 페이지 자동화 / 도구: Playwright MCP / Blast: 외부URL / Risk: M
-1. browser_navigate('https://example.com/login')
-2. browser_snapshot() → ref 확인
-3. browser_fill(email_ref, '[MASKED]') / browser_fill(pw_ref, '[MASKED]')
-4. browser_click(submit_ref)
-5. browser_snapshot() → 로그인 성공 여부 확인
-6. browser_close()
-```
-
----
-
-## ANTI-PATTERN RECORDING FORMAT
-에이전트가 오동작하여 사용자로부터 부정 피드백을 받았을 때, 아래 형식으로 `PATTERNS.md` 업데이트를 제안합니다.
-
-```markdown
-[INFO] Anti-Pattern 감지됨. PATTERNS.md 추가 제안:
-| ID | [Sev] | [Tier] | [위반 내용] | [교정 방법] | Hits: 1 | LastSeen: YYYY-MM-DD |
 ```

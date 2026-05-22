@@ -1,7 +1,11 @@
 # PATTERNS — ON-DEMAND
-<!-- Sev=M/L 안티패턴. CLAUDE.md에 주입되지 않음. -->
-<!-- 부정 피드백 수신 시 Claude가 이 파일을 직접 읽어 항목 추가·Hits 갱신 제안. -->
-<!-- Hits >= 3 항목은 CLAUDE.md ANTI-PATTERNS C/H 테이블로 승급 검토. -->
+부정 피드백 수신 시 이 파일을 읽어 항목 추가·Hits 갱신 제안. Hits ≥ 3 → CLAUDE.md C/H 테이블 승급 검토.
+
+## 기록 형식
+```
+| ID | Sev | Anti-Pattern | 교정 방법 | Hits | LastSeen |
+| NEW | M | [위반 내용] | [교정 방법] | 1 | YYYY-MM-DD |
+```
 
 ## ANTI-PATTERNS (Sev=M/L)
 
