@@ -212,3 +212,24 @@ No separate state file. Uses Claude Code built-ins:
 | Plan stress-testing | `/grill-me` |
 | Architecture improvement | `/improve-codebase-architecture` |
 | UI generation | `/frontend-design` |
+
+---
+
+## Recommended Companion Plugins
+
+`ai-common-rules` handles behavior control (MODE system, approval workflow, security guardrails). It doesn't cover execution methodology or cross-session memory by design — these plugins fill those gaps without overlapping it.
+
+### Superpowers (recommended)
+
+**Role:** Adds a full `brainstorm → spec → plan → TDD` execution methodology — spec writing, task-sized implementation plans, test-first development, systematic debugging, and git branch management.
+
+**Why it complements this harness:** `/grill-me` only validates a plan before execution starts. Superpowers picks up right after approval — turning an approved `[PLAN]` into a spec, a task breakdown, and test-driven implementation. No overlap with the MODE/approval system here.
+
+```
+/plugin marketplace add obra/superpowers-marketplace
+/plugin install superpowers@superpowers-marketplace
+```
+
+### Claude Mem — not recommended alongside this setup
+
+Claude Mem adds persistent cross-session memory (SQLite + vector store, auto-summarized from tool activity). Skip it if you're already relying on Claude Code's built-in auto-memory system — running both means duplicate context injection and no single source of truth for project state.

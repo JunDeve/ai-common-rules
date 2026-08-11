@@ -212,3 +212,24 @@ auth 모듈을 세션 방식에서 JWT로 리팩터할 계획이야
 | 플랜 스트레스 테스트 | `/grill-me` |
 | 구조 개선 | `/improve-codebase-architecture` |
 | UI 생성 | `/frontend-design` |
+
+---
+
+## 추천 병행 플러그인
+
+`ai-common-rules`는 행동 제어(MODE 시스템, 승인 워크플로우, 보안 가드레일)를 담당합니다. 실행 방법론이나 세션 간 메모리는 의도적으로 다루지 않습니다 — 아래 플러그인들은 겹치지 않게 그 공백만 채웁니다.
+
+### Superpowers (추천)
+
+**역할:** `brainstorm → spec → plan → TDD` 실행 방법론 전체를 추가 — spec 작성, 작업 단위 구현 계획, 테스트 우선 개발, 체계적 디버깅, git 브랜치 관리.
+
+**이 하네스와 겹치지 않는 이유:** `/grill-me`는 실행 전 계획 검증만 담당. Superpowers는 승인 이후를 담당 — 승인된 `[PLAN]`을 spec, 작업 분해, TDD 구현으로 이어줌. 여기 MODE/승인 시스템과 역할이 겹치지 않음.
+
+```
+/plugin marketplace add obra/superpowers-marketplace
+/plugin install superpowers@superpowers-marketplace
+```
+
+### Claude Mem — 이 구성에서는 비추천
+
+Claude Mem은 세션 간 지속 메모리(SQLite + 벡터 스토어, 툴 사용 기록 자동 요약)를 추가합니다. Claude Code의 내장 auto-memory 시스템을 이미 쓰고 있다면 건너뛰세요 — 둘 다 켜면 컨텍스트가 중복 주입되고 프로젝트 상태의 단일 진실 소스가 사라집니다.
