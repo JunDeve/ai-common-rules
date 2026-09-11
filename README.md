@@ -1,6 +1,15 @@
 # ai-common-rules
 
-**Claude Code only.** A single plugin that bundles a behavior harness, on-demand skills, and always-on MCP servers into one install.
+**Claude Code only.** This repo is both a **plugin** and its own **marketplace** — one install brings the behavior harness, the on-demand skills, two always-on MCP servers, and the curated upstream plugins it depends on.
+
+```bash
+claude plugin marketplace add JunDeve/ai-common-rules
+```
+```bash
+claude plugin install ai-common-rules@ai-common-rules-marketplace
+```
+
+Full walkthrough: [Installation](#installation).
 
 > 한국어 문서: [README.ko.md](README.ko.md)
 
@@ -16,6 +25,8 @@
 | **Skill** | `/frontend-design` | On-demand slash command | Generates distinctive, production-grade UI by committing to a bold aesthetic direction before coding |
 | **MCP** | Playwright | Always-on browser control | Lets Claude directly navigate, interact with, and inspect web pages via `browser_*` tools |
 | **MCP** | Context7 | Always-on docs lookup | Fetches real-time, version-specific official documentation to prevent hallucinated or deprecated API usage |
+| **Dependency** | `superpowers` | Auto-installed plugin | `brainstorm → spec → plan → TDD` execution methodology, systematic debugging, git branch workflow |
+| **Dependency** | `superpowers-developing-for-claude-code` | Auto-installed plugin | Skills + bundled official docs for authoring plugins, skills, and MCP servers |
 
 ---
 
@@ -42,25 +53,104 @@ ai-common-rules/
 
 ## Installation
 
-This repo is itself a **plugin marketplace**. One install pulls in the harness, the skills, the MCP servers, and the curated upstream plugins.
+### Prerequisites
 
-### Recommended — from GitHub (auto-updating)
+| Requirement | Why | Check |
+|---|---|---|
+| Claude Code CLI | Runs every command below | `claude --version` |
+| Node.js + `npx` | Playwright and Context7 MCP servers launch via `npx` | `npx --version` |
+| Git over HTTPS to GitHub | The marketplace is cloned and refreshed with `git` | `git ls-remote https://github.com/JunDeve/ai-common-rules` |
+
+Verified on Claude Code v2.1.116 and later.
+
+### Setting up a new machine
+
+**1. Register this repo as a marketplace**
 
 ```bash
 claude plugin marketplace add JunDeve/ai-common-rules
 ```
+
+Expected tail: `✔ Successfully added marketplace: ai-common-rules-marketplace`.
+
+**2. Install the plugin**
+
 ```bash
 claude plugin install ai-common-rules@ai-common-rules-marketplace
 ```
 
-`superpowers` and `superpowers-developing-for-claude-code` are declared as dependencies, so they install and enable automatically. Afterwards the marketplace refreshes over `git pull` — no manual re-upload, ever.
+`superpowers` and `superpowers-developing-for-claude-code` are declared as `dependencies` in `plugin.json`, so they are fetched and enabled in the same step — you do not install them separately.
 
-To pin to a tag instead of tracking the default branch:
+**3. Verify**
+
+```bash
+claude plugin list
+```
+
+Three plugins, all `✔ enabled`, all on `@ai-common-rules-marketplace`:
+
+```
+❯ ai-common-rules@ai-common-rules-marketplace                        enabled
+❯ superpowers@ai-common-rules-marketplace                            enabled
+❯ superpowers-developing-for-claude-code@ai-common-rules-marketplace enabled
+```
+
+**4. Restart Claude Code** (or `/reload-plugins`) so the harness and MCP servers load.
+
+### Migrating a machine that has an older setup
+
+Uninstall first, then install — two plugins with the same name from different marketplaces will both load and double up their skills.
+
+```bash
+claude plugin uninstall ai-common-rules@local-desktop-app-uploads
+```
+```bash
+claude plugin uninstall superpowers@superpowers-marketplace
+```
+```bash
+claude plugin marketplace remove superpowers-marketplace
+```
+```bash
+claude plugin marketplace remove local-desktop-app-uploads
+```
+
+Then run the *Setting up a new machine* steps above.
+
+> **Windows PowerShell 5.1:** `&&` is not a valid statement separator — `'&&' 토큰은 이 버전에서 올바른 문 구분 기호가 아닙니다.` Run each command on its own line, or chain with `;` / `if ($?) { ... }`.
+
+### Updating
+
+The marketplace refreshes over `git pull`, so a new commit on `master` propagates on the next auto-update. To pull immediately:
+
+```bash
+claude plugin marketplace update ai-common-rules-marketplace
+```
+```bash
+claude plugin update ai-common-rules@ai-common-rules-marketplace
+```
+
+Bump `version` in `.claude-plugin/plugin.json` on every release — Claude Code skips an update when the resolved version matches what is cached.
+
+To track a fixed tag instead of the default branch:
+
 ```bash
 claude plugin marketplace add JunDeve/ai-common-rules@v2.1.0
 ```
 
+### Uninstalling
+
+```bash
+claude plugin uninstall ai-common-rules@ai-common-rules-marketplace
+```
+```bash
+claude plugin prune
+```
+
+`prune` removes the two dependencies once nothing requires them. `claude plugin marketplace remove ai-common-rules-marketplace` drops the catalog entry too.
+
 ### Local development
+
+Load the working copy directly, without installing:
 
 ```bash
 claude --plugin-dir <path-to-ai-common-rules>
@@ -68,7 +158,9 @@ claude --plugin-dir <path-to-ai-common-rules>
 
 ### Claude Desktop App (manual upload)
 
-Only needed if you can't reach GitHub. Zip the folder (must include `.claude-plugin/plugin.json`), then **Code** tab → **Customize** → **Personal Plugins +** → **Upload Plugin**. Note: manually uploaded copies do **not** auto-update.
+Only when GitHub is unreachable. Zip the folder (must include `.claude-plugin/plugin.json`), then **Code** tab → **Customize** → **Personal Plugins +** → **Upload Plugin**.
+
+> A manually uploaded copy does **not** auto-update and does **not** resolve `dependencies` — Superpowers must then be installed separately. Prefer the marketplace route.
 
 ---
 

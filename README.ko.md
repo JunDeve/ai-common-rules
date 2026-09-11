@@ -1,6 +1,16 @@
 # ai-common-rules
 
-**Claude Code 전용** 플러그인. 하네스(행동 규칙) + 스킬(작업 도구) + MCP 서버를 한 번의 설치로 제어합니다.
+**Claude Code 전용.** 이 저장소는 **플러그인이자 그 자체로 마켓플레이스**입니다 — 한 번의 설치로 하네스(행동 규칙), 스킬, MCP 서버 2종, 그리고 의존성으로 묶인 업스트림 플러그인까지 전부 따라옵니다.
+
+```bash
+claude plugin marketplace add JunDeve/ai-common-rules
+```
+```bash
+claude plugin install ai-common-rules@ai-common-rules-marketplace
+```
+
+전체 절차: [설치](#설치)
+
 플래닝·태스크 추적은 Claude Code 내장 기능(플랜 모드, TodoWrite)에 위임합니다.
 
 > English documentation: [README.md](README.md)
@@ -17,6 +27,8 @@
 | **스킬** | `/frontend-design` | 온디맨드 슬래시 커맨드 | 코딩 전 명확한 미적 방향을 확정하고 개성 있는 프로덕션 UI 생성 |
 | **MCP** | Playwright | 항시 가동 브라우저 제어 | `browser_*` 툴로 웹 페이지 탐색·조작·검사를 Claude가 직접 수행 |
 | **MCP** | Context7 | 항시 가동 문서 조회 | 실시간 공식 문서 fetch → 할루시네이션·deprecated API 방지 |
+| **의존성** | `superpowers` | 자동 설치 플러그인 | `brainstorm → spec → plan → TDD` 실행 방법론, 체계적 디버깅, git 브랜치 워크플로 |
+| **의존성** | `superpowers-developing-for-claude-code` | 자동 설치 플러그인 | 플러그인·스킬·MCP 서버 제작용 스킬 + 공식 문서 동봉 |
 
 ---
 
@@ -43,25 +55,104 @@ ai-common-rules/
 
 ## 설치
 
-이 저장소 자체가 **플러그인 마켓플레이스**입니다. 한 번의 설치로 하네스·스킬·MCP 서버·흡수한 업스트림 플러그인이 전부 따라옵니다.
+### 사전 조건
 
-### 권장 — GitHub 연결 (자동 갱신)
+| 요구사항 | 이유 | 확인 명령 |
+|---|---|---|
+| Claude Code CLI | 아래 모든 명령의 실행 주체 | `claude --version` |
+| Node.js + `npx` | Playwright·Context7 MCP 서버가 `npx`로 기동 | `npx --version` |
+| GitHub HTTPS 접근 | 마켓플레이스를 `git`으로 clone·갱신 | `git ls-remote https://github.com/JunDeve/ai-common-rules` |
+
+Claude Code v2.1.116 이상에서 검증됨.
+
+### 새 PC에 설치
+
+**1. 이 저장소를 마켓플레이스로 등록**
 
 ```bash
 claude plugin marketplace add JunDeve/ai-common-rules
 ```
+
+정상 출력 마지막 줄: `✔ Successfully added marketplace: ai-common-rules-marketplace`
+
+**2. 플러그인 설치**
+
 ```bash
 claude plugin install ai-common-rules@ai-common-rules-marketplace
 ```
 
-`superpowers`, `superpowers-developing-for-claude-code`는 의존성으로 선언돼 있어 **자동 설치·자동 활성화**됩니다. 이후 마켓플레이스는 `git pull` 기반으로 갱신 — zip 재업로드 영구 불필요.
+`superpowers`와 `superpowers-developing-for-claude-code`는 `plugin.json`에 `dependencies`로 선언돼 있어 **같은 단계에서 자동으로 설치·활성화**됩니다. 따로 설치하지 마세요.
+
+**3. 검증**
+
+```bash
+claude plugin list
+```
+
+3개 전부 `✔ enabled`, 전부 `@ai-common-rules-marketplace` 소속이어야 정상:
+
+```
+❯ ai-common-rules@ai-common-rules-marketplace                        enabled
+❯ superpowers@ai-common-rules-marketplace                            enabled
+❯ superpowers-developing-for-claude-code@ai-common-rules-marketplace enabled
+```
+
+**4. Claude Code 재시작** (또는 `/reload-plugins`) — 하네스와 MCP 서버가 로드됩니다.
+
+### 구버전이 설치된 PC 마이그레이션
+
+**반드시 제거 후 설치.** 같은 이름의 플러그인이 서로 다른 마켓플레이스에서 2개 설치되면 둘 다 로드되어 스킬이 중복 주입됩니다.
+
+```bash
+claude plugin uninstall ai-common-rules@local-desktop-app-uploads
+```
+```bash
+claude plugin uninstall superpowers@superpowers-marketplace
+```
+```bash
+claude plugin marketplace remove superpowers-marketplace
+```
+```bash
+claude plugin marketplace remove local-desktop-app-uploads
+```
+
+이후 위 *새 PC에 설치* 절차를 그대로 진행.
+
+> **Windows PowerShell 5.1 주의:** `&&`는 문 구분 기호로 동작하지 않습니다 — `'&&' 토큰은 이 버전에서 올바른 문 구분 기호가 아닙니다.` 한 줄에 하나씩 실행하거나 `;` / `if ($?) { ... }`로 연결하세요.
+
+### 갱신
+
+마켓플레이스가 `git pull` 기반이라 `master`에 커밋이 올라가면 다음 자동 갱신 때 반영됩니다. 즉시 당기려면:
+
+```bash
+claude plugin marketplace update ai-common-rules-marketplace
+```
+```bash
+claude plugin update ai-common-rules@ai-common-rules-marketplace
+```
+
+릴리스마다 `.claude-plugin/plugin.json`의 `version`을 올릴 것 — 캐시된 버전과 같으면 Claude Code가 갱신을 건너뜁니다.
 
 기본 브랜치 대신 특정 태그에 고정하려면:
+
 ```bash
 claude plugin marketplace add JunDeve/ai-common-rules@v2.1.0
 ```
 
+### 제거
+
+```bash
+claude plugin uninstall ai-common-rules@ai-common-rules-marketplace
+```
+```bash
+claude plugin prune
+```
+
+`prune`은 더 이상 필요 없어진 의존성 2종을 정리합니다. 카탈로그까지 지우려면 `claude plugin marketplace remove ai-common-rules-marketplace`.
+
 ### 로컬 개발용
+
+설치 없이 작업 사본을 바로 로드:
 
 ```bash
 claude --plugin-dir <ai-common-rules 경로>
@@ -69,7 +160,9 @@ claude --plugin-dir <ai-common-rules 경로>
 
 ### Claude 데스크탑 앱 (수동 업로드)
 
-GitHub 접근이 불가할 때만 사용. 폴더를 zip으로 압축(`.claude-plugin/plugin.json` 포함 필수) → **Code** 탭 → **Customize** → **개인 플러그인** → **플러그인 업로드**. 단, 수동 업로드본은 **자동 갱신되지 않습니다.**
+GitHub 접근이 불가할 때만. 폴더를 zip으로 압축(`.claude-plugin/plugin.json` 포함 필수) → **Code** 탭 → **Customize** → **개인 플러그인** → **플러그인 업로드**.
+
+> 수동 업로드본은 **자동 갱신되지 않고 `dependencies`도 해석하지 않습니다** — Superpowers를 따로 설치해야 합니다. 마켓플레이스 방식을 권장합니다.
 
 ---
 
