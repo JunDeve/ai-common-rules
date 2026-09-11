@@ -25,6 +25,7 @@ claude plugin install ai-common-rules@ai-common-rules-marketplace
 | **스킬** | `/grill-me` | 온디맨드 슬래시 커맨드 | 코드 작성 전 플랜을 결정 트리 기반으로 한 질문씩 스트레스 테스트 |
 | **스킬** | `/improve-codebase-architecture` | 온디맨드 슬래시 커맨드 | 얕은 모듈 탐지 → 리팩터 기회 제안 → 협업 설계 |
 | **스킬** | `/frontend-design` | 온디맨드 슬래시 커맨드 | 코딩 전 명확한 미적 방향을 확정하고 개성 있는 프로덕션 UI 생성 |
+| **스킬** | `/next-move` | 온디맨드 슬래시 커맨드 | 방치된 프로젝트의 중단 지점을 저장소 증거로 복원 → 다음 한 수 3개 제시 |
 | **MCP** | Playwright | 항시 가동 브라우저 제어 | `browser_*` 툴로 웹 페이지 탐색·조작·검사를 Claude가 직접 수행 |
 | **MCP** | Context7 | 항시 가동 문서 조회 | 실시간 공식 문서 fetch → 할루시네이션·deprecated API 방지 |
 | **의존성** | `superpowers` | 자동 설치 플러그인 | `brainstorm → spec → plan → TDD` 실행 방법론, 체계적 디버깅, git 브랜치 워크플로 |
@@ -47,8 +48,10 @@ ai-common-rules/
     │   └── SKILL.md                   ← /grill-me 슬래시 커맨드
     ├── improve-codebase-architecture/
     │   └── SKILL.md                   ← /improve-codebase-architecture 슬래시 커맨드
-    └── frontend-design/
-        └── SKILL.md                   ← /frontend-design 슬래시 커맨드
+    ├── frontend-design/
+    │   └── SKILL.md                   ← /frontend-design 슬래시 커맨드
+    └── next-move/
+        └── SKILL.md                   ← /next-move 슬래시 커맨드
 ```
 
 ---
@@ -308,15 +311,33 @@ auth 모듈을 세션 방식에서 JWT로 리팩터할 계획이야
 
 ## 플래닝 및 태스크 추적
 
-별도 상태 파일 없음. Claude Code 내장 기능 사용:
+플래닝·태스크 추적은 Claude Code 내장 기능에 그대로 위임합니다. 이 플러그인이
+쓰는 유일한 파일은 `PROJECT_STATE.md`이고, 이것은 `/next-move`의 **산출물**이지
+작업 중 계속 갱신되는 로그가 아닙니다.
 
 | 역할 | 도구 |
 |---|---|
 | 계획 수립 | Claude Code 플랜 모드 |
 | 태스크 추적 | TodoWrite |
+| 방치된 프로젝트 복귀 | `/next-move` |
 | 플랜 스트레스 테스트 | `/grill-me` |
 | 구조 개선 | `/improve-codebase-architecture` |
 | UI 생성 | `/frontend-design` |
+
+### `PROJECT_STATE.md`
+
+`/next-move`가 스캔을 마칠 때 대상 프로젝트 루트에 생성됩니다. 어디서 멈췄는지,
+그 판단의 근거가 된 증거, 제시된 후보와 선택된 후보를 기록합니다.
+
+나중 세션이 이 문서를 신뢰해도 되는지는 두 필드가 결정합니다:
+
+- `Verified:` — 실제로 검증된 범위. 실행 게이트를 거부했다면 "빌드·테스트 미실행"이
+  문서에 박히므로, 돌린 적 없는 테스트를 통과한 것으로 오인할 수 없습니다.
+- `Invalidation` — 스캔 시점의 커밋. 현재 HEAD와 다르면 그 문서는 stale이고
+  `/next-move`를 다시 돌려야 합니다.
+
+이것이 `PATTERNS.md` T06을 실제로 동작하게 만드는 지점입니다 — T06은 이전 세션
+결정의 현재 유효성 검증을 요구하고, HEAD 대조가 바로 그 검증입니다.
 
 ---
 

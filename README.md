@@ -23,6 +23,7 @@ Full walkthrough: [Installation](#installation).
 | **Skill** | `/grill-me` | On-demand slash command | Stress-tests a plan by walking the decision tree one question at a time before any code is written |
 | **Skill** | `/improve-codebase-architecture` | On-demand slash command | Finds architectural deepening opportunities — detects shallow modules, proposes refactors, drives collaborative design |
 | **Skill** | `/frontend-design` | On-demand slash command | Generates distinctive, production-grade UI by committing to a bold aesthetic direction before coding |
+| **Skill** | `/next-move` | On-demand slash command | Reconstructs where a dormant project stopped from repository evidence, then proposes three candidates for what to do next |
 | **MCP** | Playwright | Always-on browser control | Lets Claude directly navigate, interact with, and inspect web pages via `browser_*` tools |
 | **MCP** | Context7 | Always-on docs lookup | Fetches real-time, version-specific official documentation to prevent hallucinated or deprecated API usage |
 | **Dependency** | `superpowers` | Auto-installed plugin | `brainstorm → spec → plan → TDD` execution methodology, systematic debugging, git branch workflow |
@@ -45,8 +46,10 @@ ai-common-rules/
     │   └── SKILL.md                   ← /grill-me slash command
     ├── improve-codebase-architecture/
     │   └── SKILL.md                   ← /improve-codebase-architecture slash command
-    └── frontend-design/
-        └── SKILL.md                   ← /frontend-design slash command
+    ├── frontend-design/
+    │   └── SKILL.md                   ← /frontend-design slash command
+    └── next-move/
+        └── SKILL.md                   ← /next-move slash command
 ```
 
 ---
@@ -307,15 +310,35 @@ No configuration needed. Works out of the box.
 
 ## Planning & Task Tracking
 
-No separate state file. Uses Claude Code built-ins:
+Planning and task tracking stay on Claude Code built-ins. The one file this
+plugin writes is `PROJECT_STATE.md`, and it is an output of `/next-move`, not a
+running log — nothing appends to it during normal work.
 
 | Role | Tool |
 |---|---|
 | Planning | Claude Code Plan Mode |
 | Task tracking | TodoWrite |
+| Reorienting in a dormant project | `/next-move` |
 | Plan stress-testing | `/grill-me` |
 | Architecture improvement | `/improve-codebase-architecture` |
 | UI generation | `/frontend-design` |
+
+### `PROJECT_STATE.md`
+
+Written to the target project's root when `/next-move` finishes a scan. It
+records where work stopped, the evidence behind that reading, the candidates
+proposed, and which one was chosen.
+
+Two fields decide whether a later session should trust it:
+
+- `Verified:` — how much was actually checked. If the execution gate was
+  declined, the file says the build and tests were never run, so a later
+  session cannot read a passing suite into a document that never ran one.
+- `Invalidation` — the commit the scan was built from. When current HEAD no
+  longer matches, the document is stale and `/next-move` should be re-run.
+
+This is what makes `PATTERNS.md` T06 executable: the rule requires verifying a
+prior session's decisions are still valid, and comparing HEAD is that check.
 
 ---
 

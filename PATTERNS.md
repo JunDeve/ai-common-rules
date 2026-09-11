@@ -15,7 +15,7 @@
 | **C02** | M | ON-DEMAND | thought 내용 본문 재요약 | Delta(변경점)와 최종 결과만 기술 | 0 | - |
 | **C03** | L | ON-DEMAND | 필수 식별자 누락 | 조건 해당 시 [PLAN]/[CAUTION]/[CRITICAL]/[CONFIDENCE:LOW] 명시 | 0 | - |
 | **C04** | M | ON-DEMAND | 승인 전 "완료했습니다" 표현 | 승인 전 `[PLAN]`만 사용 | 0 | - |
-| **T06** | M | ON-DEMAND | 이전 세션 결정 검증 없이 재사용 | `PROJECT_STATE.md` 확인 후 현재 유효성 검증 | 0 | - |
+| **T06** | M | ON-DEMAND | 이전 세션 결정 검증 없이 재사용 | `PROJECT_STATE.md` 있으면 `HEAD-at-scan`을 현재 HEAD와 대조 — 불일치 시 stale로 간주. 없으면 `/next-move`로 생성 | 0 | - |
 | **S01** | M | ON-DEMAND | 여러 목적의 작업을 1 Turn에 혼재 | 논리 단위로 분리하여 각각 승인 후 진행 | 0 | - |
 | **S02** | L | ON-DEMAND | 파일 생성·수정 시 Docstring 누락 | 파일 상단에 역할·용도·수정일 기재 | 0 | - |
 | **P03** | H | ON-DEMAND | 페이지 변경 후 이전 스냅샷 ref 재사용 | 페이지 변경 후 `browser_snapshot()` 재호출 → 새 ref 사용 | 0 | - |
