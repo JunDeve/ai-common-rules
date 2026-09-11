@@ -31,6 +31,56 @@ Full walkthrough: [Installation](#installation).
 
 ---
 
+## Quick Reference
+
+**Install on a new machine** — clone, then run one script. Nothing else.
+
+```bash
+git clone https://github.com/JunDeve/ai-common-rules && cd ai-common-rules
+```
+```bash
+powershell -ExecutionPolicy Bypass -File install.ps1
+```
+
+On macOS, Linux, or Git Bash run `./install.sh` instead. Restart Claude Code
+afterwards. Details and the manual path: [Installation](#installation).
+
+**Slash commands from this plugin**
+
+| Command | What it does |
+|---|---|
+| `/next-move` | Reconstructs where a dormant project stopped, proposes three candidates |
+| `/grill-me` | Interviews you about a plan until every decision branch is resolved |
+| `/improve-codebase-architecture` | Finds shallow modules and proposes deepening refactors |
+| `/frontend-design` | Builds UI committed to a deliberate aesthetic direction |
+
+**From the bundled dependencies** — mostly invoked by Claude when the situation
+calls for them rather than typed. The ones worth knowing by name:
+
+| Skill | When it takes over |
+|---|---|
+| `brainstorming` | Before any creative work — turns an idea into an approved design |
+| `writing-plans` | Turns an approved design into an implementation plan |
+| `test-driven-development` | Before writing implementation code |
+| `systematic-debugging` | On any bug or unexpected behavior, before proposing a fix |
+| `requesting-code-review` | Before merging |
+| `verification-before-completion` | Before claiming anything is done — demands evidence |
+| `developing-claude-code-plugins` | When working on a plugin, including this one |
+
+**Managing the install**
+
+| Task | Command |
+|---|---|
+| See what is installed | `claude plugin list` |
+| Pull updates now | `claude plugin marketplace update ai-common-rules-marketplace` |
+| Remove | `claude plugin uninstall ai-common-rules@ai-common-rules-marketplace` |
+| Check the repo itself | `python scripts/validate.py` |
+
+Background updates run on their own once `autoUpdate` is set — the installers
+set it. See [Staying current](#staying-current-while-you-leave-the-project-alone).
+
+---
+
 ## Structure
 
 ```

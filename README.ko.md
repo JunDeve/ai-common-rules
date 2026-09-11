@@ -33,6 +33,56 @@ claude plugin install ai-common-rules@ai-common-rules-marketplace
 
 ---
 
+## 명령어 한눈에
+
+**새 PC 설치** — 클론 후 스크립트 1개. 그게 전부.
+
+```bash
+git clone https://github.com/JunDeve/ai-common-rules && cd ai-common-rules
+```
+```bash
+powershell -ExecutionPolicy Bypass -File install.ps1
+```
+
+macOS·Linux·Git Bash에서는 `./install.sh`. 끝나면 Claude Code 재시작.
+상세 절차와 수동 설치: [설치](#설치)
+
+**이 플러그인의 슬래시 커맨드**
+
+| 커맨드 | 역할 |
+|---|---|
+| `/next-move` | 방치된 프로젝트의 중단 지점 복원 → 다음 한 수 3개 제시 |
+| `/grill-me` | 결정 트리의 모든 가지가 해소될 때까지 계획을 한 질문씩 추궁 |
+| `/improve-codebase-architecture` | 얕은 모듈 탐지 → 깊게 만드는 리팩터 제안 |
+| `/frontend-design` | 의도된 미적 방향을 확정하고 UI 구현 |
+
+**의존성이 제공하는 스킬** — 대부분 직접 타이핑하지 않고 상황에 맞춰 Claude가
+자동 호출합니다. 이름을 알아둘 만한 것들:
+
+| 스킬 | 언제 개입하나 |
+|---|---|
+| `brainstorming` | 창작 작업 전 — 아이디어를 승인된 설계로 |
+| `writing-plans` | 승인된 설계를 구현 계획으로 |
+| `test-driven-development` | 구현 코드를 쓰기 전 |
+| `systematic-debugging` | 버그·예상 밖 동작 발생 시, 수정안 제시 전 |
+| `requesting-code-review` | 머지 전 |
+| `verification-before-completion` | "완료" 주장 전 — 증거를 요구 |
+| `developing-claude-code-plugins` | 플러그인 작업 시 (이 저장소 포함) |
+
+**설치 관리**
+
+| 작업 | 명령 |
+|---|---|
+| 설치 현황 확인 | `claude plugin list` |
+| 지금 바로 갱신 | `claude plugin marketplace update ai-common-rules-marketplace` |
+| 제거 | `claude plugin uninstall ai-common-rules@ai-common-rules-marketplace` |
+| 저장소 자체 검증 | `python scripts/validate.py` |
+
+`autoUpdate`가 켜져 있으면 백그라운드 갱신은 알아서 돌아갑니다 — 설치 스크립트가
+켜줍니다. [방치해도 최신 상태 유지하기](#방치해도-최신-상태-유지하기) 참조.
+
+---
+
 ## 구조
 
 ```
