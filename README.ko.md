@@ -165,9 +165,39 @@ claude plugin marketplace remove local-desktop-app-uploads
 
 > **Windows PowerShell 5.1 주의:** `&&`는 문 구분 기호로 동작하지 않습니다 — `'&&' 토큰은 이 버전에서 올바른 문 구분 기호가 아닙니다.` 한 줄에 하나씩 실행하거나 `;` / `if ($?) { ... }`로 연결하세요.
 
-### 갱신
+### 방치해도 최신 상태 유지하기
 
-마켓플레이스가 `git pull` 기반이라 `master`에 커밋이 올라가면 다음 자동 갱신 때 반영됩니다. 즉시 당기려면:
+업스트림을 복사하지 않고 링크로 가져오는 방식은 **그 링크가 실제로 움직일 때만**
+값어치가 있습니다. 그런데 **서드파티 마켓플레이스는 자동 갱신이 꺼진 채 설치됩니다** —
+누군가 수동으로 update를 치기 전까지 아무것도 올라가지 않고, 방치된 프로젝트에는
+바로 그 수동 조작이 영영 없습니다.
+
+설치 스크립트가 이 설정을 켭니다. 수동으로 구성했다면 `~/.claude/settings.json`의
+마켓플레이스 항목에 `autoUpdate`를 추가하세요:
+
+```json
+{
+  "extraKnownMarketplaces": {
+    "ai-common-rules-marketplace": {
+      "source": { "source": "github", "repo": "JunDeve/ai-common-rules" },
+      "autoUpdate": true
+    }
+  }
+}
+```
+
+이 설정이 있으면 Claude Code가 세션 시작 직후 백그라운드에서 마켓플레이스를 갱신하고
+설치된 플러그인을 최신 버전으로 올립니다 — 이 플러그인과 업스트림 의존성 2종 전부,
+명령 한 줄 없이.
+
+> **git submodule은 왜 안 쓰나?** submodule은 **특정 커밋에 고정**하는 장치입니다.
+> 올리려면 `git submodule update --remote` → 커밋 → 푸시를 사람이 직접, 매번 해야
+> 하고 clone에도 `--recursive`가 필요합니다. "방치해도 최신"과 정반대죠. 마켓플레이스
+> `source` 링크는 SHA를 고정하지 않아 업스트림의 릴리스가 그대로 흘러들어옵니다.
+
+### 필요할 때 즉시 갱신
+
+백그라운드 갱신을 기다리지 않고 바로 당기려면:
 
 ```bash
 claude plugin marketplace update ai-common-rules-marketplace

@@ -49,6 +49,39 @@ fi
 cyan "Installing $PLUGIN (with dependencies)"
 claude plugin install "$PLUGIN@$MARKETPLACE"
 
+cyan 'Enabling background auto-update'
+
+# Third-party marketplaces ship with auto-update OFF. Without this the plugin
+# and its upstream dependencies only move when someone runs an update by hand,
+# which defeats the point of linking upstream repos instead of vendoring them.
+SETTINGS="$HOME/.claude/settings.json"
+if [ ! -f "$SETTINGS" ]; then
+  warn 'settings.json not found -- skipping'
+elif command -v python3 >/dev/null 2>&1; then
+  python3 - "$SETTINGS" "$MARKETPLACE" <<'PY'
+import json, sys
+path, name = sys.argv[1], sys.argv[2]
+with open(path, encoding="utf-8") as fh:
+    data = json.load(fh)
+entry = data.get("extraKnownMarketplaces", {}).get(name)
+if entry is None:
+    print("   marketplace entry not found in settings.json -- skipping")
+elif entry.get("autoUpdate"):
+    print("   already enabled")
+else:
+    entry["autoUpdate"] = True
+    with open(path, "w", encoding="utf-8") as fh:
+        json.dump(data, fh, indent=2, ensure_ascii=False)
+        fh.write("
+")
+    print("   enabled")
+PY
+else
+  warn 'python3 not found, so settings.json was left alone.'
+  warn "Set extraKnownMarketplaces -> $MARKETPLACE -> autoUpdate to true by hand"
+  warn 'to keep upstream plugins current without running updates yourself.'
+fi
+
 cyan 'Installed plugins'
 claude plugin list
 

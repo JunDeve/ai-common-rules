@@ -63,6 +63,34 @@ try {
 Write-Step "Installing $Plugin (with dependencies)"
 claude plugin install "$Plugin@$Marketplace"
 
+Write-Step 'Enabling background auto-update'
+
+# Third-party marketplaces ship with auto-update OFF. Without this the plugin
+# and its upstream dependencies only move when someone runs an update by hand,
+# which defeats the point of linking upstream repos instead of vendoring them.
+$settingsPath = Join-Path $HOME '.claude\settings.json'
+if (Test-Path $settingsPath) {
+    try {
+        $settings = Get-Content $settingsPath -Raw | ConvertFrom-Json
+        $entry = $settings.extraKnownMarketplaces.$Marketplace
+        if ($null -eq $entry) {
+            Write-Warn "marketplace entry not found in settings.json -- skipping"
+        } elseif ($entry.PSObject.Properties.Name -contains 'autoUpdate' -and $entry.autoUpdate) {
+            Write-Ok 'already enabled'
+        } else {
+            $entry | Add-Member -NotePropertyName autoUpdate -NotePropertyValue $true -Force
+            # Depth matters: the default of 2 would flatten the nested source object.
+            $settings | ConvertTo-Json -Depth 10 | Set-Content $settingsPath -Encoding utf8
+            Write-Ok 'enabled'
+        }
+    } catch {
+        Write-Warn "could not update settings.json: $_"
+        Write-Warn 'Set extraKnownMarketplaces -> autoUpdate to true by hand to keep upstreams current.'
+    }
+} else {
+    Write-Warn 'settings.json not found -- skipping'
+}
+
 Write-Step 'Installed plugins'
 claude plugin list
 

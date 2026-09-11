@@ -164,9 +164,40 @@ Then run the *Setting up a new machine* steps above.
 
 > **Windows PowerShell 5.1:** `&&` is not a valid statement separator — `'&&' 토큰은 이 버전에서 올바른 문 구분 기호가 아닙니다.` Run each command on its own line, or chain with `;` / `if ($?) { ... }`.
 
-### Updating
+### Staying current while you leave the project alone
 
-The marketplace refreshes over `git pull`, so a new commit on `master` propagates on the next auto-update. To pull immediately:
+Linking upstream repos instead of vendoring them only pays off if the links
+actually move. **Third-party marketplaces ship with auto-update turned off**, so
+a fresh install updates nothing until someone runs an update by hand — which is
+exactly what a dormant project never gets.
+
+The installers turn it on. If you set things up manually, add `autoUpdate` to
+the marketplace entry in `~/.claude/settings.json`:
+
+```json
+{
+  "extraKnownMarketplaces": {
+    "ai-common-rules-marketplace": {
+      "source": { "source": "github", "repo": "JunDeve/ai-common-rules" },
+      "autoUpdate": true
+    }
+  }
+}
+```
+
+With that set, Claude Code refreshes the marketplace and updates installed
+plugins in the background shortly after each session starts — this plugin and
+both upstream dependencies, with no command from you.
+
+> **Why not git submodules?** A submodule pins a fixed commit. Advancing it
+> means running `git submodule update --remote`, committing, and pushing — by
+> hand, forever, and cloning needs `--recursive`. That is the opposite of
+> staying current unattended. Marketplace `source` links carry no pinned SHA, so
+> the upstream's own releases flow through on their own.
+
+### Updating on demand
+
+To pull immediately rather than waiting for the background refresh:
 
 ```bash
 claude plugin marketplace update ai-common-rules-marketplace
