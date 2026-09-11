@@ -1,0 +1,40 @@
+{
+  "$schema": "https://code.claude.com/schemas/marketplace.json",
+  "name": "ai-common-rules-marketplace",
+  "owner": {
+    "name": "JunDeve",
+    "url": "https://github.com/JunDeve"
+  },
+  "description": "Behavior harness + skills + curated upstream plugins for Claude Code",
+  "plugins": [
+    {
+      "name": "ai-common-rules",
+      "source": "./",
+      "description": "Harness (behavior rules) + skills for Claude Code. Enforces response identifiers, approval workflow, security guardrails, and token compression.",
+      "license": "MIT",
+      "keywords": [
+        "harness",
+        "rules",
+        "security",
+        "skills",
+        "workflow"
+      ]
+    },
+    {
+      "name": "superpowers",
+      "source": {
+        "source": "url",
+        "url": "https://github.com/obra/superpowers.git"
+      },
+      "description": "Upstream (obra/superpowers). Core skills library: TDD, debugging, planning, collaboration patterns."
+    },
+    {
+      "name": "superpowers-developing-for-claude-code",
+      "source": {
+        "source": "url",
+        "url": "https://github.com/obra/superpowers-developing-for-claude-code.git"
+      },
+      "description": "Upstream (obra). Skills + official docs for developing Claude Code plugins, skills, and MCP servers."
+    }
+  ]
+}

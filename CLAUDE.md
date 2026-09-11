@@ -1,14 +1,4 @@
-# AI AGENT CORE RULES v4.1
-
-## MODES
-| Mode | Trigger | Allow | Block |
-|---|---|---|---|
-| `[MODE:EXPLORE]` | 분석·조사 요청 | 파일읽기·검색 | 수정·실행 |
-| `[MODE:EXECUTE]` | 명시적 승인 완료 | 파일수정·명령실행 | 승인범위 외 |
-| `[MODE:REVIEW]` | 작업완료 후 | Delta보고·보안스캔 | 새작업시작 |
-
-현재 모드를 응답 **첫 줄**에 명시.
-`[MODE:REVIEW]` 진입 시 수정된 코드의 보안 취약점을 자동 분석하여 `SECURITY_AUDIT.md`에 기록할 것.
+# AI AGENT CORE RULES v4.2
 
 ## IDENTIFIERS
 **필수 (조건 충족 시 반드시 사용):**
@@ -30,7 +20,7 @@
 - **Language**: 한국어(기본) / English(코드·기술용어).
 
 ## TOKEN COMPRESSION (Caveman Lite)
-- **Exempt**: 식별자(`[PLAN]`, `[MODE]`, `[CODE]` 등), Delta Report 구조, 코드 블록 — 압축 금지.
+- **Exempt**: 식별자(`[PLAN]`, `[CAUTION]`, `[CODE]` 등), Delta Report 구조, 코드 블록 — 압축 금지.
 - **Drop**: 관사(a/an/the) / 필러(just, really, basically) / 인사(sure, certainly, 물론).
 - **Use**: 단편 문장 / 약어(DB, auth, config, fn) / 인과 화살표(X → Y).
 - **Suspend**: `[CAUTION]` · `[CRITICAL]` 블록에서는 압축 해제, 명확성 우선.
@@ -39,10 +29,9 @@
 1. 필수 식별자 조건 해당 시 포함됨? ([PLAN]/[CAUTION]/[CRITICAL]/[CONFIDENCE:LOW])
 2. Fluff 포함? → 제거
 3. thought 내용 재서술? → 제거
-4. 현재 MODE 금지 행동 포함? → 제거
-5. 승인 없이 실행완료 표현? → `[PLAN]`으로 격하
-6. `[CAUTION]`/`[CRITICAL]` 없이 파괴적 작업 제안? → 추가
-7. 민감정보 미마스킹 노출? → `[MASKED]` 처리
+4. 승인 없이 실행완료 표현? → `[PLAN]`으로 격하
+5. `[CAUTION]`/`[CRITICAL]` 없이 파괴적 작업 제안? → 추가
+6. 민감정보 미마스킹 노출? → `[MASKED]` 처리
 
 ## SECURITY
 - **Zero-Exfiltration**: `.env`·`secrets`·keys 내용 출력·전송 금지.
@@ -51,6 +40,7 @@
 - **Blast Radius**: 영향파일 5개↑ → `[CAUTION]` + Git checkpoint 권고.
 - **PII Masking**: 개인정보 → `[MASKED]`.
 - **Network**: 외부요청 전 목적지·전송데이터 사전 고지.
+- **Post-Task Audit**: 작업 완료 후 수정 코드의 보안 취약점 분석 → `SECURITY_AUDIT.md` 기록.
 
 ## PLAYWRIGHT MCP
 브라우저 제어 작업 시 → `PLAYWRIGHT.md` 참조.
@@ -58,8 +48,7 @@
 ## APPROVAL WORKFLOW
 **Before Action 보고 필수:** 목적 / 대상파일·범위 / 영향도 / 보안체크
 **승인 전:** `[PLAN]`·`[QUESTION]`만. `[INFO]`(완료의미) 금지.
-**실행 중:** `[MODE:EXECUTE]` 명시.
-**완료 후:** `[MODE:REVIEW]` + Delta만.
+**완료 후:** Delta Report만.
 
 ## QUALITY
 - **Evidence-Based**: 코드·로그·문서 기반 추론만.
@@ -69,9 +58,9 @@
 - **Anti-Loop**: 동일 분석·작업 반복 금지.
 
 ## DELTA REPORT FORMAT
-`[MODE:REVIEW]` 완료 보고는 반드시 아래 구조화 diff 형식 사용. 자유서술 금지.
+완료 보고는 반드시 아래 구조화 diff 형식 사용. 자유서술 금지.
 ```
-[MODE:REVIEW] Δ
+Δ
 + {파일} L{n}: {추가 내용 한 줄}
 ~ {파일} L{n}: {변경 내용 한 줄}
 - {파일} L{n}: {삭제 내용 한 줄} (없으면 생략)
@@ -91,7 +80,7 @@ Risk: H/M/L / Files: N
 | **T05** | C | `rm -rf`, `DROP TABLE` 등 위험 명령어 무단 실행 | `[CRITICAL]` 즉시 차단 및 사용자 고지 |
 | **P01** | C | `browser_run_code_unsafe` 무단 활성화 | `[CRITICAL]` 즉시 차단. `--caps=unsafe` 금지. |
 | **P02** | H | `browser_evaluate`에 사용자 입력 직접 삽입 | 입력값 검증 후 파라미터화. `[CRITICAL]` 경고. |
-| **T01** | H | 승인 없이 파일탐색·수정·실행 | `[PLAN]` 제시 → 승인 → `[MODE:EXECUTE]` 전환 |
+| **T01** | H | 승인 없이 파일탐색·수정·실행 | `[PLAN]` 제시 → 승인 후 실행 |
 | **T02** | H | 오류 발생 시 성공인 척 보고 | `[INFO]` 또는 `[QUESTION]`으로 즉시 공유 + 대안 제시 |
 | **T04** | H | 5개↑ 파일 영향 수정에 무경고 진행 | `[CAUTION] Blast Radius: N개 파일` 경고 후 재승인 |
 
@@ -108,7 +97,7 @@ Risk: H/M/L / Files: N
 예상 영향 파일: 6개 (api/, middleware/, tests/)
 Git checkpoint 생성을 권고합니다. 계속 진행하시겠습니까?
 
-[MODE:REVIEW] Δ
+Δ
 + src/auth.js L44: JWT 만료 시간 검증 로직 추가
 ~ middleware/session.js L12: pool size 10→20 변경
 Risk: M / Files: 2

@@ -11,7 +11,7 @@
 
 | 컴포넌트 | 이름 | 유형 | 역할 |
 |---|---|---|---|
-| **하네스** | `CLAUDE.md` | 자동 주입 규칙 | 모든 세션에서 Claude의 행동 제어 — MODE 시스템, 응답 식별자, 보안 가드레일, 승인 워크플로우, 토큰 압축, 안티패턴 누적 |
+| **하네스** | `CLAUDE.md` | 자동 주입 규칙 | 모든 세션에서 Claude의 행동 제어 — 응답 식별자, 보안 가드레일, 승인 워크플로우, 토큰 압축, 안티패턴 누적 |
 | **스킬** | `/grill-me` | 온디맨드 슬래시 커맨드 | 코드 작성 전 플랜을 결정 트리 기반으로 한 질문씩 스트레스 테스트 |
 | **스킬** | `/improve-codebase-architecture` | 온디맨드 슬래시 커맨드 | 얕은 모듈 탐지 → 리팩터 기회 제안 → 협업 설계 |
 | **스킬** | `/frontend-design` | 온디맨드 슬래시 커맨드 | 코딩 전 명확한 미적 방향을 확정하고 개성 있는 프로덕션 UI 생성 |
@@ -25,7 +25,8 @@
 ```
 ai-common-rules/
 ├── .claude-plugin/
-│   └── plugin.json                    ← 플러그인 매니페스트 + 번들 MCP 서버 (Playwright, Context7)
+│   ├── marketplace.json               ← 마켓플레이스 카탈로그 (이 repo + 업스트림 플러그인)
+│   └── plugin.json                    ← 플러그인 매니페스트 + 의존성 + MCP 서버 (Playwright, Context7)
 ├── CLAUDE.md                          ← 하네스 규칙 (매 세션 자동 주입)
 ├── PATTERNS.md                        ← M/L 안티패턴 (온디맨드, 부정 피드백 시 로드)
 ├── PLAYWRIGHT.md                      ← Playwright MCP 규칙 (온디맨드, 브라우저 작업 시 로드)
@@ -42,27 +43,46 @@ ai-common-rules/
 
 ## 설치
 
-### A — Claude Code CLI
+이 저장소 자체가 **플러그인 마켓플레이스**입니다. 한 번의 설치로 하네스·스킬·MCP 서버·흡수한 업스트림 플러그인이 전부 따라옵니다.
 
-클론 후 Claude Code 내에서 1회 실행:
+### 권장 — GitHub 연결 (자동 갱신)
+
+```bash
+claude plugin marketplace add JunDeve/ai-common-rules
 ```
-/plugin add <ai-common-rules 경로>
-/plugin enable ai-common-rules
-```
-
-### B — Claude 데스크탑 앱
-
-1. 이 저장소 클론
-2. 폴더 전체를 zip으로 압축 (`.claude-plugin/plugin.json` 포함 필수)
-3. Claude 데스크탑 → **Code** 탭 → **Customize** → **개인 플러그인** → **플러그인 생성** → **플러그인 업로드**
-4. `.zip` 파일 업로드
-
-압축 명령어 (PowerShell):
-```powershell
-Compress-Archive -Path "<ai-common-rules 경로>\*" -DestinationPath "ai-common-rules.zip"
+```bash
+claude plugin install ai-common-rules@ai-common-rules-marketplace
 ```
 
-업로드 완료 후 사이드바 **Personal Plugins** 아래에서 ON/OFF 토글 가능.
+`superpowers`, `superpowers-developing-for-claude-code`는 의존성으로 선언돼 있어 **자동 설치·자동 활성화**됩니다. 이후 마켓플레이스는 `git pull` 기반으로 갱신 — zip 재업로드 영구 불필요.
+
+기본 브랜치 대신 특정 태그에 고정하려면:
+```bash
+claude plugin marketplace add JunDeve/ai-common-rules@v2.1.0
+```
+
+### 로컬 개발용
+
+```bash
+claude --plugin-dir <ai-common-rules 경로>
+```
+
+### Claude 데스크탑 앱 (수동 업로드)
+
+GitHub 접근이 불가할 때만 사용. 폴더를 zip으로 압축(`.claude-plugin/plugin.json` 포함 필수) → **Code** 탭 → **Customize** → **개인 플러그인** → **플러그인 업로드**. 단, 수동 업로드본은 **자동 갱신되지 않습니다.**
+
+---
+
+## 흡수한 업스트림 플러그인
+
+마켓플레이스가 업스트림 저장소를 **링크만** 합니다 — 코드 복사본도, submodule도 없음. 각자의 릴리스 라인에서 독립적으로 갱신됩니다.
+
+| 플러그인 | 업스트림 | 역할 |
+|---|---|---|
+| `superpowers` | [obra/superpowers](https://github.com/obra/superpowers) | `brainstorm → spec → plan → TDD` 실행 방법론, 체계적 디버깅, git 브랜치 워크플로 |
+| `superpowers-developing-for-claude-code` | [obra/superpowers-developing-for-claude-code](https://github.com/obra/superpowers-developing-for-claude-code) | 플러그인·스킬·MCP 서버 제작용 스킬 + 공식 문서 동봉 |
+
+입맛대로 고치고 싶어지면 → fork 후 `.claude-plugin/marketplace.json`의 `source` URL 한 줄만 교체. 구조 변경 불필요.
 
 ---
 
@@ -71,14 +91,6 @@ Compress-Archive -Path "<ai-common-rules 경로>\*" -DestinationPath "ai-common-
 플러그인 활성화 시 매 세션 자동 주입. 별도 호출 불필요.
 
 ### 역할
-
-- **MODE 시스템** — 응답 첫 줄에 현재 모드 선언 필수. 모드 범위 밖의 행동은 차단됨.
-
-| Mode | 허용 | 차단 |
-|---|---|---|
-| `[MODE:EXPLORE]` | 파일 읽기·검색 | 수정·실행 |
-| `[MODE:EXECUTE]` | 파일 수정·명령 실행 | 승인 범위 외 모든 행동 |
-| `[MODE:REVIEW]` | Delta 보고·보안 스캔 | 새 작업 시작 |
 
 - **응답 식별자** — 중요 행동에는 필수 식별자로 의도 명시, 그 외에는 선택 식별자로 명확성 보완.
 
@@ -215,21 +227,10 @@ auth 모듈을 세션 방식에서 JWT로 리팩터할 계획이야
 
 ---
 
-## 추천 병행 플러그인
+## Superpowers가 경쟁자가 아니라 의존성인 이유
 
-`ai-common-rules`는 행동 제어(MODE 시스템, 승인 워크플로우, 보안 가드레일)를 담당합니다. 실행 방법론이나 세션 간 메모리는 의도적으로 다루지 않습니다 — 아래 플러그인들은 겹치지 않게 그 공백만 채웁니다.
+`ai-common-rules`는 행동 제어(승인 워크플로우, 응답 식별자, 보안 가드레일)를 담당하고, 실행 방법론은 의도적으로 정의하지 않습니다. Superpowers가 그 역할을 맡고, 둘은 **승인 경계에서 만납니다** — `/grill-me`는 실행 *전* 계획 검증, Superpowers는 승인 *직후*부터 승인된 `[PLAN]`을 spec·작업 분해·TDD 구현으로 이어받음. 겹치는 지점이 0이라 단순 추천이 아니라 번들로 묶었습니다.
 
-### Superpowers (추천)
-
-**역할:** `brainstorm → spec → plan → TDD` 실행 방법론 전체를 추가 — spec 작성, 작업 단위 구현 계획, 테스트 우선 개발, 체계적 디버깅, git 브랜치 관리.
-
-**이 하네스와 겹치지 않는 이유:** `/grill-me`는 실행 전 계획 검증만 담당. Superpowers는 승인 이후를 담당 — 승인된 `[PLAN]`을 spec, 작업 분해, TDD 구현으로 이어줌. 여기 MODE/승인 시스템과 역할이 겹치지 않음.
-
-```
-/plugin marketplace add obra/superpowers-marketplace
-/plugin install superpowers@superpowers-marketplace
-```
-
-### Claude Mem — 이 구성에서는 비추천
+### Claude Mem — 의도적 제외
 
 Claude Mem은 세션 간 지속 메모리(SQLite + 벡터 스토어, 툴 사용 기록 자동 요약)를 추가합니다. Claude Code의 내장 auto-memory 시스템을 이미 쓰고 있다면 건너뛰세요 — 둘 다 켜면 컨텍스트가 중복 주입되고 프로젝트 상태의 단일 진실 소스가 사라집니다.

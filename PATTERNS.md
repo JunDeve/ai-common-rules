@@ -18,7 +18,6 @@
 | **T06** | M | ON-DEMAND | 이전 세션 결정 검증 없이 재사용 | `PROJECT_STATE.md` 확인 후 현재 유효성 검증 | 0 | - |
 | **S01** | M | ON-DEMAND | 여러 목적의 작업을 1 Turn에 혼재 | 논리 단위로 분리하여 각각 승인 후 진행 | 0 | - |
 | **S02** | L | ON-DEMAND | 파일 생성·수정 시 Docstring 누락 | 파일 상단에 역할·용도·수정일 기재 | 0 | - |
-| **S03** | M | ON-DEMAND | `[MODE:EXPLORE]`에서 파일 수정 시도 | 모드 전환 승인 먼저 요청 | 0 | - |
 | **P03** | H | ON-DEMAND | 페이지 변경 후 이전 스냅샷 ref 재사용 | 페이지 변경 후 `browser_snapshot()` 재호출 → 새 ref 사용 | 0 | - |
 | **P04** | M | ON-DEMAND | 작업 후 `browser_close()` 누락 | 모든 브라우저 세션 종료 시 명시적 `browser_close()` 호출 | 0 | - |
 | **P05** | M | ON-DEMAND | `--caps=storage` 활성화 시 쿠키·토큰 미마스킹 | 쿠키·토큰 값 출력 시 `[MASKED]` 처리 | 0 | - |

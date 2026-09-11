@@ -10,7 +10,7 @@
 
 | Component | Name | Type | Role |
 |---|---|---|---|
-| **Harness** | `CLAUDE.md` | Auto-injected rules | Controls how Claude behaves in every session — MODE system, response identifiers, security guardrails, approval workflow, token compression, anti-pattern tracking |
+| **Harness** | `CLAUDE.md` | Auto-injected rules | Controls how Claude behaves in every session — response identifiers, security guardrails, approval workflow, token compression, anti-pattern tracking |
 | **Skill** | `/grill-me` | On-demand slash command | Stress-tests a plan by walking the decision tree one question at a time before any code is written |
 | **Skill** | `/improve-codebase-architecture` | On-demand slash command | Finds architectural deepening opportunities — detects shallow modules, proposes refactors, drives collaborative design |
 | **Skill** | `/frontend-design` | On-demand slash command | Generates distinctive, production-grade UI by committing to a bold aesthetic direction before coding |
@@ -24,7 +24,8 @@
 ```
 ai-common-rules/
 ├── .claude-plugin/
-│   └── plugin.json                    ← Plugin manifest + bundled MCP servers (Playwright, Context7)
+│   ├── marketplace.json               ← Marketplace catalog (this repo + upstream plugins)
+│   └── plugin.json                    ← Plugin manifest + dependencies + MCP servers (Playwright, Context7)
 ├── CLAUDE.md                          ← Harness rules (always injected)
 ├── PATTERNS.md                        ← M/L anti-patterns (on-demand, loaded on negative feedback)
 ├── PLAYWRIGHT.md                      ← Playwright MCP rules (on-demand, loaded for browser tasks)
@@ -41,27 +42,46 @@ ai-common-rules/
 
 ## Installation
 
-### Option A — Claude Code CLI
+This repo is itself a **plugin marketplace**. One install pulls in the harness, the skills, the MCP servers, and the curated upstream plugins.
 
-Clone this repo, then run once inside Claude Code:
+### Recommended — from GitHub (auto-updating)
+
+```bash
+claude plugin marketplace add JunDeve/ai-common-rules
 ```
-/plugin add <path-to-ai-common-rules>
-/plugin enable ai-common-rules
-```
-
-### Option B — Claude Desktop App
-
-1. Clone this repo
-2. Zip the entire folder (must include `.claude-plugin/plugin.json`)
-3. Open Claude Desktop → **Code** tab → **Customize** → **Personal Plugins +** → **Upload Plugin**
-4. Upload the `.zip` file
-
-Quick zip command (PowerShell):
-```powershell
-Compress-Archive -Path "<path-to-ai-common-rules>\*" -DestinationPath "ai-common-rules.zip"
+```bash
+claude plugin install ai-common-rules@ai-common-rules-marketplace
 ```
 
-Once uploaded, toggle ON/OFF from **Personal Plugins** in the sidebar.
+`superpowers` and `superpowers-developing-for-claude-code` are declared as dependencies, so they install and enable automatically. Afterwards the marketplace refreshes over `git pull` — no manual re-upload, ever.
+
+To pin to a tag instead of tracking the default branch:
+```bash
+claude plugin marketplace add JunDeve/ai-common-rules@v2.1.0
+```
+
+### Local development
+
+```bash
+claude --plugin-dir <path-to-ai-common-rules>
+```
+
+### Claude Desktop App (manual upload)
+
+Only needed if you can't reach GitHub. Zip the folder (must include `.claude-plugin/plugin.json`), then **Code** tab → **Customize** → **Personal Plugins +** → **Upload Plugin**. Note: manually uploaded copies do **not** auto-update.
+
+---
+
+## Bundled Upstream Plugins
+
+The marketplace links these upstream repos directly — no vendored copies, no submodules. Each stays on its own release line and updates independently.
+
+| Plugin | Upstream | Role |
+|---|---|---|
+| `superpowers` | [obra/superpowers](https://github.com/obra/superpowers) | `brainstorm → spec → plan → TDD` execution methodology, systematic debugging, git branch workflow |
+| `superpowers-developing-for-claude-code` | [obra/superpowers-developing-for-claude-code](https://github.com/obra/superpowers-developing-for-claude-code) | Skills + bundled official docs for authoring plugins, skills, and MCP servers |
+
+To customize one, fork it and swap the `source` URL in `.claude-plugin/marketplace.json` — no structural change needed.
 
 ---
 
@@ -70,14 +90,6 @@ Once uploaded, toggle ON/OFF from **Personal Plugins** in the sidebar.
 Injected automatically into every session when the plugin is enabled. No invocation needed.
 
 ### What it does
-
-- **MODE System** — Claude declares its current mode on the first line of every response and is blocked from actions outside that mode's scope
-
-| Mode | Allows | Blocks |
-|---|---|---|
-| `[MODE:EXPLORE]` | File reads, search | Edits, execution |
-| `[MODE:EXECUTE]` | File edits, command execution | Anything outside approved scope |
-| `[MODE:REVIEW]` | Delta report, security scan | Starting new work |
 
 - **Response Identifiers** — Required identifiers enforce explicit intent on critical actions; optional identifiers add clarity when helpful
 
@@ -215,21 +227,10 @@ No separate state file. Uses Claude Code built-ins:
 
 ---
 
-## Recommended Companion Plugins
+## Why Superpowers Is a Dependency, Not a Rival
 
-`ai-common-rules` handles behavior control (MODE system, approval workflow, security guardrails). It doesn't cover execution methodology or cross-session memory by design — these plugins fill those gaps without overlapping it.
+`ai-common-rules` handles behavior control — approval workflow, response identifiers, security guardrails. It deliberately does not define an execution methodology. Superpowers does, and the two meet at the approval boundary: `/grill-me` validates a plan *before* execution starts, Superpowers picks up *right after* approval, turning an approved `[PLAN]` into a spec, a task breakdown, and test-driven implementation. Zero overlap — which is why it's bundled rather than merely suggested.
 
-### Superpowers (recommended)
-
-**Role:** Adds a full `brainstorm → spec → plan → TDD` execution methodology — spec writing, task-sized implementation plans, test-first development, systematic debugging, and git branch management.
-
-**Why it complements this harness:** `/grill-me` only validates a plan before execution starts. Superpowers picks up right after approval — turning an approved `[PLAN]` into a spec, a task breakdown, and test-driven implementation. No overlap with the MODE/approval system here.
-
-```
-/plugin marketplace add obra/superpowers-marketplace
-/plugin install superpowers@superpowers-marketplace
-```
-
-### Claude Mem — not recommended alongside this setup
+### Claude Mem — deliberately excluded
 
 Claude Mem adds persistent cross-session memory (SQLite + vector store, auto-summarized from tool activity). Skip it if you're already relying on Claude Code's built-in auto-memory system — running both means duplicate context injection and no single source of truth for project state.
