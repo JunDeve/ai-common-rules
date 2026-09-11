@@ -1,0 +1,182 @@
+# /next-move — Design
+
+Date: 2026-09-11
+Status: Approved (brainstorming complete, ready for implementation planning)
+Plugin: ai-common-rules
+
+## Problem
+
+Every tool in this plugin assumes the user already holds the project's context.
+`/improve-codebase-architecture` finds shallow modules but never asks why work
+stopped. `/code-review` and `/simplify` look only at recent changes.
+`brainstorming` and `writing-plans` start from a goal the user has already
+chosen. None of them answer the question that actually blocks a return to a
+dormant repository: **where did this stop, and what is worth doing next?**
+
+A second problem is internal. `PATTERNS.md` T06 instructs the agent to check
+`PROJECT_STATE.md` before reusing a prior session's decisions, but no such file
+exists and the README states the opposite — that the plugin keeps no separate
+state file. `/next-move` resolves the contradiction by becoming that file's
+producer.
+
+## Scope
+
+In scope: a new on-demand skill at `skills/next-move/SKILL.md`, the
+`PROJECT_STATE.md` artifact it writes, and the documentation edits that remove
+the contradiction above.
+
+Out of scope: changes to the other three skills, the harness rules in
+`CLAUDE.md`, and the dangling `LANGUAGE.md` reference in
+`improve-codebase-architecture` (tracked separately).
+
+## Boundaries
+
+`/next-move` is a predecessor, not a replacement. It answers **what to do**;
+everything downstream answers **how**.
+
+| Skill | Question it answers |
+|---|---|
+| `/next-move` | Where did this stop, and what is worth doing next? |
+| `writing-plans` | How do we do the thing that was chosen? |
+| `/improve-codebase-architecture` | Which modules are shallow? (assumes context) |
+| `/grill-me` | Is a plan we already have sound? |
+
+Running `/improve-codebase-architecture` can itself appear as one of the
+candidates `/next-move` proposes.
+
+Trigger phrasing for the skill's `description` frontmatter: reopening a project
+after a long gap, "where did I leave off", "what should I work on first",
+inheriting an unfamiliar repository.
+
+## Structure
+
+A single `skills/next-move/SKILL.md`, matching the three existing skills. The
+marker table and the `PROJECT_STATE.md` template live inline in that file.
+
+Splitting reference material into separate files — the pattern `CLAUDE.md` uses
+for `PATTERNS.md` and `PLAYWRIGHT.md` — earns nothing here. That split reduces
+what gets injected into every session; a skill file is read only when the skill
+is invoked, so splitting it moves tokens without saving any.
+
+A collection script was also rejected. It would make evidence gathering
+deterministic and cheaper in tokens, but this plugin currently ships as
+markdown only, and adding a Python runtime dependency raises the cost of every
+install for a benefit the agent can already deliver with shell commands.
+
+## Pipeline
+
+### Stage 1 — Static collection (read-only, no side effects)
+
+| Source | Collected |
+|---|---|
+| git | Last commit timestamp and subject; cadence across the previous 20 commits; per-branch last-commit date with ahead/behind against the default branch; `stash list`; uncommitted changes |
+| Code | `TODO` / `FIXME` / `HACK` / `XXX` markers, each dated via `git blame`, sorted oldest first |
+| Stack | Marker-file detection, then run commands read out of the marker file itself (`scripts`, `[tool.*]`, Makefile targets) |
+| Docs | Commands and features the README claims, checked against what exists; undecided items in `docs/adr/` |
+| CI | Presence of workflow files; recent run results when `gh` is available |
+
+Marker files: `package.json`, `pyproject.toml`, `requirements.txt`, `go.mod`,
+`Cargo.toml`, `pom.xml`, `build.gradle*`, `*.csproj`, `Gemfile`,
+`composer.json`. When none match, ask rather than guess. Run commands are never
+hardcoded in the skill — they are read from whichever marker file was found, so
+supporting a new ecosystem costs nothing.
+
+### Stage 2 — Timeline reconstruction
+
+One paragraph narrating what the evidence shows. Every claim traces to a value
+collected in stage 1. No inference beyond the evidence.
+
+### Stage 3 — Execution gate
+
+Present the detected commands together with their side effects, then wait for
+approval. Marked `[CAUTION]` per the harness.
+
+> Planned: `npm ci` (installs dependencies, requires network, ~2 min) → `npm test`
+> Declining leaves test status unknown; the scan continues either way.
+
+Dependency installation is called out separately from test execution, because
+it mutates the working tree. A refusal does not abort the pipeline — stage 4
+proceeds with less evidence, and the reduced confidence is recorded.
+
+### Stage 4 — Candidates and handoff
+
+Three candidates, each tied to specific evidence:
+
+| # | Candidate | Evidence | Impact | Cost | Risk |
+|---|---|---|---|---|---|
+
+The user picks one. The skill writes `PROJECT_STATE.md`, then invokes
+`writing-plans` with the chosen candidate and the collected evidence.
+
+## PROJECT_STATE.md
+
+Written to the target project's root.
+
+```markdown
+# PROJECT_STATE
+<!-- Generated by /next-move. Hand edits are fine. -->
+
+Scanned: 2026-09-11
+HEAD-at-scan: 53cd538
+Stack: Node.js (npm) + pytest
+Verified: static scan only (build and tests not run)
+
+## Where it stopped
+(one paragraph)
+
+## Evidence
+| Item | Value | Source |
+
+## Next moves
+| # | Candidate | Impact | Cost | Risk | Status |
+| 1 | ... | H | S | L | chosen |
+
+## Invalidation
+HEAD is no longer 53cd538 → this document is stale. Do not trust its contents;
+re-run /next-move.
+```
+
+Two fields carry the design weight.
+
+`Verified:` records how much of the document was actually checked. When the
+stage 3 gate is declined, the file says so, which stops a later session from
+reading "tests pass" into a document that never ran them.
+
+`Invalidation` binds the document's lifetime to the commit it was built from.
+This is what makes `PATTERNS.md` T06 executable: the rule tells the agent to
+verify a prior session's decisions are still valid, and the recorded HEAD is
+the check that verification runs.
+
+## Documentation changes
+
+| File | Change |
+|---|---|
+| `README.md`, `README.ko.md` | The "Planning & Task Tracking" section currently claims no separate state file. Replace with: `PROJECT_STATE.md` is a `/next-move` artifact whose lifetime is bound to HEAD. Add `/next-move` to the What's Included table and give it a section alongside the other skills. |
+| `PATTERNS.md` | T06 assumes `PROJECT_STATE.md` exists. Reword so the absence of the file is a valid state that points at `/next-move`, rather than a checklist step that silently fails. |
+| `.claude-plugin/plugin.json` | `2.1.0` → `2.2.0` (a new skill is a feature, not a patch). |
+
+## Testing
+
+The skill produces prose and a markdown file, so there is nothing to unit test.
+Verify by running it against three repositories with known shapes:
+
+1. **Required before release** — this repository: markdown only, no build, no
+   tests. Exercises the no-marker-file path and confirms the skill asks instead
+   of guessing.
+2. Opportunistic, whenever such a repository is at hand — one with a real build
+   and a failing test: confirms stage 3 surfaces the failure and that
+   `Verified:` reflects it.
+3. Opportunistic — one with uncommitted work and an unmerged branch: confirms
+   the timeline narrates an interrupted state rather than a finished one.
+
+Only case 1 gates the release; cases 2 and 3 are follow-up validation and must
+not hold up the merge.
+
+For each: does every claim in the output trace to a collected value, and does
+declining the stage 3 gate degrade the report honestly rather than silently?
+
+## Blast radius
+
+Five files: one new skill, two READMEs, `PATTERNS.md`, `plugin.json`. Per the
+harness this crosses the threshold that requires a `[CAUTION]` notice and a git
+checkpoint before implementation begins.
