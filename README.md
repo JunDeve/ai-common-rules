@@ -137,7 +137,7 @@ Bump `version` in `.claude-plugin/plugin.json` on every release — Claude Code 
 To track a fixed tag instead of the default branch:
 
 ```bash
-claude plugin marketplace add JunDeve/ai-common-rules@v2.1.0
+claude plugin marketplace add JunDeve/ai-common-rules@v2.2.0
 ```
 
 ### Uninstalling
@@ -274,6 +274,29 @@ What happens:
 2. Commits to a specific aesthetic direction (e.g., brutalist, retro-futuristic, editorial) before coding
 3. Outputs production-ready code (HTML/CSS/JS, React, Vue, etc.) with distinctive typography, color, motion, and layout
 4. Each generation intentionally varies — no two outputs converge on the same style
+
+---
+
+### `/next-move`
+
+**Role:** Reconstructs where a project stopped from repository evidence, then proposes three candidates for what to do next and hands the chosen one to `writing-plans`.
+
+**When to use:** Reopening a project after a long gap, inheriting an unfamiliar repository, or any time the honest answer to "what should I do here?" is "I don't remember."
+
+```
+/next-move
+```
+
+What happens:
+
+1. **Static collection** — commit cadence, branch divergence, stashes, uncommitted work, dated `TODO`/`FIXME` markers, stack detection from marker files, README claims checked against reality, CI presence. Read-only, no side effects.
+2. **Timeline** — one paragraph narrating what the evidence shows. Every claim traces to a collected value; nothing is inferred about intent.
+3. **Execution gate** — builds and tests run only after a `[CAUTION]` approval, with dependency installation called out separately because it mutates the working tree. Declining does not abort the scan; it records the reduced confidence instead.
+4. **Candidates** — three, each naming the evidence behind it, scored H/M/L on impact, cost, and risk. Retiring stale work counts as a candidate. Picking one writes `PROJECT_STATE.md` and invokes `writing-plans`.
+
+Run commands are read out of whichever marker file was detected rather than hardcoded, so a new ecosystem costs nothing. When no marker file matches, the skill asks instead of guessing.
+
+See [`PROJECT_STATE.md`](#project_statemd) for the artifact it writes and how staleness is decided.
 
 ---
 

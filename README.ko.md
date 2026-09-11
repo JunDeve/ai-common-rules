@@ -139,7 +139,7 @@ claude plugin update ai-common-rules@ai-common-rules-marketplace
 기본 브랜치 대신 특정 태그에 고정하려면:
 
 ```bash
-claude plugin marketplace add JunDeve/ai-common-rules@v2.1.0
+claude plugin marketplace add JunDeve/ai-common-rules@v2.2.0
 ```
 
 ### 제거
@@ -275,6 +275,29 @@ auth 모듈을 세션 방식에서 JWT로 리팩터할 계획이야
 2. 코딩 전 구체적인 미적 방향 확정 (예: brutalist, retro-futuristic, editorial 등)
 3. 해당 방향에 맞는 타이포·색상·모션·레이아웃이 적용된 프로덕션 코드 출력 (HTML/CSS/JS, React, Vue 등)
 4. 매 생성마다 의도적으로 다른 결과 — 동일한 스타일로 수렴하지 않음
+
+---
+
+### `/next-move`
+
+**역할:** 저장소의 증거로 프로젝트가 어디서 멈췄는지 복원하고, 다음 한 수 후보 3개를 제시한 뒤 선택된 것을 `writing-plans`로 넘김.
+
+**언제 사용:** 오랜만에 프로젝트를 다시 열 때, 넘겨받은 낯선 저장소를 파악할 때, "여기서 뭘 해야 하지?"에 대한 솔직한 답이 "기억 안 남"일 때.
+
+```
+/next-move
+```
+
+실행 흐름:
+
+1. **정적 수집** — 커밋 리듬, 브랜치 divergence, stash, 미커밋 작업, 날짜가 매겨진 `TODO`/`FIXME`, 마커파일 기반 스택 탐지, README 주장과 실제의 대조, CI 존재 여부. 읽기 전용, 부작용 없음.
+2. **타임라인** — 증거가 말해주는 것만 한 문단으로 서술. 모든 주장은 수집값으로 역추적 가능하며, 의도는 추측하지 않음.
+3. **실행 게이트** — 빌드·테스트는 `[CAUTION]` 승인 후에만 실행. 의존성 설치는 작업 트리를 변경하므로 테스트 실행과 분리해 고지. 거부해도 스캔은 중단되지 않고, 검증 수준이 낮아진 사실이 기록됨.
+4. **후보** — 3개, 각각 근거가 된 증거를 명시하고 임팩트·비용·리스크를 H/M/L로 표기. **작업을 폐기하는 것도 정당한 후보.** 하나를 고르면 `PROJECT_STATE.md`를 쓰고 `writing-plans`를 호출.
+
+실행 명령은 스킬에 하드코딩하지 않고 탐지된 마커파일에서 읽어냅니다 — 새 생태계 지원에 추가 비용이 없습니다. 일치하는 마커파일이 없으면 추측하지 않고 질문합니다.
+
+산출물과 stale 판정 기준은 [`PROJECT_STATE.md`](#project_statemd) 참조.
 
 ---
 

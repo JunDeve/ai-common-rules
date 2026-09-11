@@ -5,6 +5,11 @@ Thumbs.db
 # AI Harness — 세션별 생성 파일 (공유 불가)
 .ai/SECURITY_AUDIT.md
 
+# /next-move 산출물 — 스캔 시점 커밋에 묶여 있어 다음 커밋에 바로 stale.
+# 방치된 프로젝트에서는 커밋해 공유할 가치가 있으나, 활발히 개발 중인
+# 이 저장소에서는 노이즈. 로컬 산출물로만 유지.
+PROJECT_STATE.md
+
 # Environments
 .env
 .env.local
