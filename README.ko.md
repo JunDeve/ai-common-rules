@@ -40,6 +40,12 @@ ai-common-rules/
 ├── .claude-plugin/
 │   ├── marketplace.json               ← 마켓플레이스 카탈로그 (이 repo + 업스트림 플러그인)
 │   └── plugin.json                    ← 플러그인 매니페스트 + 의존성 + MCP 서버 (Playwright, Context7)
+├── install.ps1                        ← 원커맨드 설치 스크립트 (Windows PowerShell)
+├── install.sh                         ← 원커맨드 설치 스크립트 (macOS / Linux / Git Bash)
+├── scripts/
+│   └── validate.py                    ← 구조 검증. CI와 로컬 양쪽에서 실행
+├── .github/workflows/
+│   └── validate.yml                   ← 모든 push·PR에서 검증 실행
 ├── CLAUDE.md                          ← 하네스 규칙 (매 세션 자동 주입)
 ├── PATTERNS.md                        ← M/L 안티패턴 (온디맨드, 부정 피드백 시 로드)
 ├── PLAYWRIGHT.md                      ← Playwright MCP 규칙 (온디맨드, 브라우저 작업 시 로드)
@@ -68,7 +74,43 @@ ai-common-rules/
 
 Claude Code v2.1.116 이상에서 검증됨.
 
-### 새 PC에 설치
+### 한 번에 설치 (권장)
+
+저장소를 클론하고 쉘에 맞는 설치 스크립트를 실행하세요. 마켓플레이스 등록 →
+의존성 포함 플러그인 설치 → 결과 목록 출력까지 한 번에 처리합니다. 여러 번
+실행해도 안전합니다.
+
+```bash
+git clone https://github.com/JunDeve/ai-common-rules && cd ai-common-rules
+```
+
+**Windows** — `install.ps1` 우클릭 → *PowerShell로 실행*, 또는:
+
+```bash
+powershell -ExecutionPolicy Bypass -File install.ps1
+```
+
+**macOS / Linux / Git Bash**
+
+```bash
+./install.sh
+```
+
+두 스크립트 모두 시작 전에 `claude`가 PATH에 있는지 확인하고, `npx`가 없으면
+MCP 서버가 기동되지 않는다는 경고만 띄우고 진행하며, 이미 등록된 마켓플레이스는
+오류가 아니라 성공으로 처리합니다.
+
+### 터미널 없이 클릭만
+
+Claude 데스크탑 앱에서: **Code** 탭 → **Customize** → **개인 플러그인** →
+`JunDeve/ai-common-rules`를 마켓플레이스로 추가 → `ai-common-rules` 설치.
+의존성은 CLI와 동일하게 자동 해석됩니다.
+
+> `settings.json`에 적어두는 것만으로는 **안 됩니다.** `extraKnownMarketplaces`로
+> 마켓플레이스는 등록되지만, 소스가 외부 저장소인 플러그인은 여전히 설치 과정이
+> 필요합니다 — 설정은 활성화만 할 뿐 내려받지 않습니다.
+
+### 새 PC에 설치 (단계별)
 
 **1. 이 저장소를 마켓플레이스로 등록**
 
@@ -371,3 +413,28 @@ auth 모듈을 세션 방식에서 JWT로 리팩터할 계획이야
 ### Claude Mem — 의도적 제외
 
 Claude Mem은 세션 간 지속 메모리(SQLite + 벡터 스토어, 툴 사용 기록 자동 요약)를 추가합니다. Claude Code의 내장 auto-memory 시스템을 이미 쓰고 있다면 건너뛰세요 — 둘 다 켜면 컨텍스트가 중복 주입되고 프로젝트 상태의 단일 진실 소스가 사라집니다.
+
+---
+
+## 개발
+
+이 저장소는 markdown과 JSON만 배포하므로 컴파일 대상도, 테스트 스위트도 없습니다.
+대신 깨지는 것은 구조이고, `scripts/validate.py`가 정확히 그것을 검사합니다:
+
+```bash
+python scripts/validate.py
+```
+
+| 검사 | 잡아내는 것 |
+|---|---|
+| 매니페스트 파싱 + 마켓플레이스가 이 플러그인을 포함 | 설치 시점에 터지는 잘못된 `plugin.json`·`marketplace.json` |
+| 모든 `dependencies` 항목이 마켓플레이스 안에서 해석됨 | 존재하지 않는 대상을 가리키는 의존성 — 여기가 아니라 **사용자 PC에서** 실패함 |
+| 각 `SKILL.md`의 frontmatter 파싱 + `name`이 디렉터리명과 일치 | `/<name>`으로 호출이 조용히 안 되는 스킬 |
+| 상대 경로 `.md` 링크 해석 | 작성된 적 없는 파일을 가리키는 문서 |
+| 두 README의 섹션 개수 동일 | 한쪽에만 추가하고 다른 쪽을 잊은 섹션 |
+
+`.github/workflows/validate.yml`이 `master` push와 모든 PR에서 이를 실행하고,
+Claude Code가 이 저장소를 마켓플레이스로 clone할 때와 동일한 방식으로 매니페스트를
+다시 읽는 단계를 추가로 수행합니다.
+
+모든 검사 항목은 해당 실수가 실제로 `master`에 한 번씩 들어간 적이 있어서 생겼습니다.

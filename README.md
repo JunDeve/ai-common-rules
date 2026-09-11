@@ -38,6 +38,12 @@ ai-common-rules/
 ├── .claude-plugin/
 │   ├── marketplace.json               ← Marketplace catalog (this repo + upstream plugins)
 │   └── plugin.json                    ← Plugin manifest + dependencies + MCP servers (Playwright, Context7)
+├── install.ps1                        ← One-command installer (Windows PowerShell)
+├── install.sh                         ← One-command installer (macOS / Linux / Git Bash)
+├── scripts/
+│   └── validate.py                    ← Structural checks, run by CI and locally
+├── .github/workflows/
+│   └── validate.yml                   ← Runs the checks on every push and PR
 ├── CLAUDE.md                          ← Harness rules (always injected)
 ├── PATTERNS.md                        ← M/L anti-patterns (on-demand, loaded on negative feedback)
 ├── PLAYWRIGHT.md                      ← Playwright MCP rules (on-demand, loaded for browser tasks)
@@ -66,7 +72,44 @@ ai-common-rules/
 
 Verified on Claude Code v2.1.116 and later.
 
-### Setting up a new machine
+### One command (recommended)
+
+Clone the repo and run the installer for your shell. It registers the
+marketplace, installs the plugin with its dependencies, and prints the
+resulting plugin list. Re-running it is safe.
+
+```bash
+git clone https://github.com/JunDeve/ai-common-rules && cd ai-common-rules
+```
+
+**Windows** — right-click `install.ps1` → *Run with PowerShell*, or:
+
+```bash
+powershell -ExecutionPolicy Bypass -File install.ps1
+```
+
+**macOS / Linux / Git Bash**
+
+```bash
+./install.sh
+```
+
+Both check for `claude` on PATH before doing anything, warn (without failing)
+when `npx` is missing since the MCP servers need it, and treat an
+already-registered marketplace as success rather than an error.
+
+### Click-only, no terminal
+
+In the Claude desktop app: **Code** tab → **Customize** → **Personal Plugins**,
+add `JunDeve/ai-common-rules` as a marketplace, then install `ai-common-rules`
+from it. Dependencies resolve the same way they do on the command line.
+
+> Declaring the plugin in `settings.json` alone does **not** work. Claude Code
+> adds a marketplace from `extraKnownMarketplaces`, but a plugin whose source is
+> an external repository still has to be installed — settings can enable it, not
+> fetch it.
+
+### Setting up a new machine, step by step
 
 **1. Register this repo as a marketplace**
 
@@ -372,3 +415,29 @@ prior session's decisions are still valid, and comparing HEAD is that check.
 ### Claude Mem — deliberately excluded
 
 Claude Mem adds persistent cross-session memory (SQLite + vector store, auto-summarized from tool activity). Skip it if you're already relying on Claude Code's built-in auto-memory system — running both means duplicate context injection and no single source of truth for project state.
+
+---
+
+## Development
+
+This repo ships markdown and JSON, so nothing compiles and there is no test
+suite. What breaks instead is structural, and `scripts/validate.py` checks for
+exactly that:
+
+```bash
+python scripts/validate.py
+```
+
+| Check | Catches |
+|---|---|
+| Manifests parse; marketplace lists this plugin | A malformed `plugin.json` or `marketplace.json` that fails at install time |
+| Every `dependencies` entry resolves in the marketplace | A bare-name dependency pointing at nothing, which fails on the user's machine rather than here |
+| Each `SKILL.md` has parseable frontmatter with `name` matching its directory | A skill that silently stops being invocable as `/<name>` |
+| Relative `.md` links resolve | Docs pointing at files that were never written |
+| Both READMEs have the same section count | A section added to one README and forgotten in the other |
+
+`.github/workflows/validate.yml` runs this on every push to `master` and every
+pull request, plus a second step that re-reads the manifests the way Claude Code
+does when it clones this repo as a marketplace.
+
+Every check exists because that mistake actually reached `master` at least once.

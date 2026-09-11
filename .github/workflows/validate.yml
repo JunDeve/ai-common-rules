@@ -1,0 +1,42 @@
+name: validate
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Structural checks
+        run: python scripts/validate.py
+
+      - name: Marketplace resolves from a clean clone
+        # scripts/validate.py reads the working tree. This step proves the same
+        # manifests parse the way Claude Code reads them when it clones the
+        # repository as a marketplace, which is the path every install takes.
+        run: |
+          python - <<'PY'
+          import json, pathlib, sys
+          market = json.loads(pathlib.Path(".claude-plugin/marketplace.json").read_text(encoding="utf-8"))
+          plugin = json.loads(pathlib.Path(".claude-plugin/plugin.json").read_text(encoding="utf-8"))
+          for field in ("name", "owner", "plugins"):
+              if field not in market:
+                  sys.exit(f"marketplace.json is missing required field {field!r}")
+          if "name" not in market["owner"]:
+              sys.exit("marketplace.json owner is missing required field 'name'")
+          for entry in market["plugins"]:
+              for field in ("name", "source"):
+                  if field not in entry:
+                      sys.exit(f"marketplace entry {entry.get('name', '?')!r} is missing {field!r}")
+          print(f"marketplace {market['name']!r} lists {len(market['plugins'])} plugins")
+          print(f"plugin {plugin['name']!r} version {plugin['version']}")
+          PY
