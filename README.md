@@ -386,6 +386,8 @@ On first run, these are auto-created in your project:
 
 ### `/frontend-design`
 
+**Source:** Adapted from Anthropic's official `frontend-design` skill, unlike the other three skills in this repo, which are original. Bundled inline rather than linked upstream like `superpowers` (see [Bundled Upstream Plugins](#bundled-upstream-plugins)) since Anthropic doesn't distribute it as its own plugin repo.
+
 **Role:** Generates distinctive, production-grade UI by committing to a bold aesthetic direction before writing any code. Avoids generic AI defaults (Inter font, purple gradients, predictable layouts).
 
 **When to use:** Any time you need a UI component, page, or full application built with intentional design rather than statistical-median aesthetics.
