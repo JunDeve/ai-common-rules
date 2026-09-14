@@ -33,6 +33,23 @@ claude plugin install ai-common-rules@ai-common-rules-marketplace
 
 ---
 
+## 무엇이 달라지나
+
+두 가지 구체적 비교 — 벤치마크 아님. 토큰 수나 "X% 감소" 같은 수치는 여기 없습니다: 진짜 신뢰할 만한 수치라면 같은 모델·같은 태스크로 여러 번 반복해야 하는데, 이 README는 뒷받침할 수 없는 숫자를 싣지 않습니다. 대신 실제로 무엇이 다른지를 그대로 서술합니다.
+
+**일어나선 안 될 파일 읽기.** 수정하지 않은 Claude Code 세션에 `.env` 파일을 읽으라고 하면, 실제로 따를지는 그 순간 모델의 판단에 달려 있습니다. 이 플러그인을 설치하면 그렇지 않습니다 — `hooks/hooks.json`의 `PreToolUse` 훅이 `Read(**/.env*)`를 tool 호출이 실행되기도 전에 차단합니다([보안 훅](#보안-훅) 참고) — `rm -rf`, 강제 push, hard reset도 마찬가지. 설득할 대상 자체가 없습니다: 호출이 모델의 재량에 도달하기 전에 끝납니다.
+
+**완료 보고가 어떻게 달라지나.** 하네스가 없으면 전형적인 완료 보고는 이런 식입니다: *"auth 모듈을 세션 방식에서 JWT 토큰 방식으로 바꿨어요! src/auth.js에 만료 검증도 추가했고, middleware/session.js의 커넥션 풀 크기도 늘렸습니다. 추가로 조정할 부분 있으면 말씀해주세요!"* — 실제 캡처한 트랜스크립트가 아니라 비정형 출력의 대표적인 예시입니다. `CLAUDE.md`의 Delta Report 형식은 같은 완료 보고가 이렇게 나오도록 강제합니다 — `CLAUDE.md`의 `GOLDEN EXAMPLES`에서 그대로 가져온 것:
+
+```
+Δ
++ src/auth.js L44: JWT 만료 시간 검증 로직 추가
+~ middleware/session.js L12: pool size 10→20 변경
+Risk: M / Files: 2
+```
+
+---
+
 ## 명령어 한눈에
 
 **새 PC 설치** — 클론 후 스크립트 1개. 그게 전부.
