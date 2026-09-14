@@ -31,6 +31,23 @@ Full walkthrough: [Installation](#installation).
 
 ---
 
+## What Changes
+
+Two concrete comparisons — illustrative, not benchmarks. No token-count or "X% smaller" numbers appear here: a real one would need the same model, the same task, and several repetitions to be worth trusting, and this README isn't going to publish a number it can't back up. What follows is what actually differs, described plainly instead.
+
+**A file read that shouldn't happen.** Ask an unmodified Claude Code session to read a `.env` file and whether it complies is a judgment call the model makes in the moment. With this plugin installed, it isn't: `hooks/hooks.json`'s `PreToolUse` hook denies `Read(**/.env*)` before the tool call ever runs (see [Security Hooks](#security-hooks)) — the same is true for `rm -rf`, forced pushes, and hard resets. Nothing to persuade; the call never reaches the model's discretion.
+
+**How a completed task gets reported.** Without a harness, a typical completion reads like *"I've gone ahead and updated the auth module to use JWT tokens instead of sessions! I added expiration validation in src/auth.js and bumped the connection pool size in middleware/session.js. Let me know if you'd like any adjustments!"* — representative prose, not a captured transcript. `CLAUDE.md`'s Delta Report format requires the same completion to look like this instead, taken verbatim from `CLAUDE.md`'s own `GOLDEN EXAMPLES`:
+
+```
+Δ
++ src/auth.js L44: JWT 만료 시간 검증 로직 추가
+~ middleware/session.js L12: pool size 10→20 변경
+Risk: M / Files: 2
+```
+
+---
+
 ## Quick Reference
 
 **Install on a new machine** — clone, then run one script. Nothing else.
