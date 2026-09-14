@@ -69,7 +69,7 @@ Risk: H/M/L / Files: N
 ```
 
 ## GC TRIGGERS
-- 부정 피드백("틀렸어", "그렇게 하지 마", "잘못됐어") → `PATTERNS.md` 직접 읽어 항목 추가 제안.
+- 부정 피드백("틀렸어", "그렇게 하지 마", "잘못됐어" / "that's wrong", "don't do that", "incorrect") → `PATTERNS.md` 직접 읽어 항목 추가·Hits 갱신 제안. `hooks/hooks.json`의 `UserPromptSubmit` 훅이 이 조건을 감지해 알려줌 — 매칭된 항목의 Hits는 직접 숫자를 고치지 말고 `python scripts/bump_pattern_hits.py <ID>`로 증가.
 
 ---
 
