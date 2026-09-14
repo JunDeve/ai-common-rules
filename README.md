@@ -90,6 +90,8 @@ ai-common-rules/
 │   └── plugin.json                    ← Plugin manifest + dependencies + MCP servers (Playwright, Context7)
 ├── install.ps1                        ← One-command installer (Windows PowerShell)
 ├── install.sh                         ← One-command installer (macOS / Linux / Git Bash)
+├── hooks/
+│   └── hooks.json                     ← PreToolUse security hooks (auto-discovered, no manifest wiring)
 ├── scripts/
 │   └── validate.py                    ← Structural checks, run by CI and locally
 ├── .github/workflows/
@@ -335,6 +337,23 @@ Injected automatically into every session when the plugin is enabled. No invocat
 - **Anti-Pattern Tracking** — On negative feedback, Claude reads `PATTERNS.md` directly and proposes adding the violation. Items with Hits ≥ 3 are reviewed for promotion to the always-on tier in `CLAUDE.md`.
 
 - **Playwright MCP Rules** — Snapshot-first workflow, capability gating, and security guardrails for all `browser_*` tool usage. Full rules in `PLAYWRIGHT.md` (loaded on-demand for browser tasks).
+
+---
+
+## Security Hooks
+
+The `## SECURITY` rules in `CLAUDE.md` are prompt instructions — Claude can violate them if it misjudges a situation. The rules below instead block at the permission layer, before the tool call runs, via `hooks/hooks.json`'s `PreToolUse` hooks. A plugin cannot ship this through `settings.json` (Claude Code only reads the `agent`/`subagentStatusLine` keys from a plugin's own `settings.json`); `hooks/hooks.json` is the supported mechanism, auto-discovered by file convention with no `plugin.json` change needed.
+
+| Blocked pattern | Backs which `CLAUDE.md` rule |
+|---|---|
+| `Read(**/.env*)` | Zero-Exfiltration |
+| `Bash(cat *.env*)`, `Bash(type *.env*)` | Zero-Exfiltration |
+| `Bash(rm -rf *)` | Destructive Gate / Anti-Pattern T05 |
+| `Bash(git push --force*)`, `Bash(git push -f *)` | Destructive Gate |
+| `Bash(git reset --hard*)` | Destructive Gate |
+| `Bash(sudo *)` | Destructive Gate |
+
+Each entry denies unconditionally (`exit 2`) rather than running a script to decide, deliberately: the `if` matcher already narrows to an exact pattern, and an inline command has to work identically whether Claude Code runs it through Git Bash or PowerShell (Windows without Git Bash falls back to PowerShell) — `exit <code>` is the only construct guaranteed to mean the same thing in both, so no per-OS script pair to maintain.
 
 ---
 
