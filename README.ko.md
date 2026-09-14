@@ -328,7 +328,7 @@ GitHub 접근이 불가할 때만. 폴더를 zip으로 압축(`.claude-plugin/pl
 
 - **보안 가드레일** — API Key·secrets 마스킹(`[MASKED]`), 시스템 경로 차단(`[CRITICAL]`), 영향 파일 5개↑ 시 `[CAUTION]` + Git checkpoint 권고.
 
-- **토큰 압축 (Caveman Lite)** — 관사·필러·인사 제거. 단편 문장·약어·인과 화살표 사용. `[CAUTION]`/`[CRITICAL]` 블록에서는 압축 해제.
+- **토큰 압축 (Caveman Lite)** — 관사·필러·인사 제거. 단편 문장·약어·인과 화살표 사용. `[CAUTION]`/`[CRITICAL]` 블록에서는 압축 해제. 이름·발상은 [`JuliusBrussee/caveman`](https://github.com/JuliusBrussee/caveman)에서 인용 — 차이점은 [아래](#caveman--토큰-압축-인용이지-복제가-아니다) 참조.
 
 - **안티패턴 누적** — 부정 피드백 수신 시 `PATTERNS.md`를 직접 읽어 항목 추가 제안. Hits ≥ 3 항목은 `CLAUDE.md` 항상 적용 티어 승급 검토.
 
@@ -489,6 +489,10 @@ auth 모듈을 세션 방식에서 JWT로 리팩터할 계획이야
 ## Superpowers가 경쟁자가 아니라 의존성인 이유
 
 `ai-common-rules`는 행동 제어(승인 워크플로우, 응답 식별자, 보안 가드레일)를 담당하고, 실행 방법론은 의도적으로 정의하지 않습니다. Superpowers가 그 역할을 맡고, 둘은 **승인 경계에서 만납니다** — `/grill-me`는 실행 *전* 계획 검증, Superpowers는 승인 *직후*부터 승인된 `[PLAN]`을 spec·작업 분해·TDD 구현으로 이어받음. 겹치는 지점이 0이라 단순 추천이 아니라 번들로 묶었습니다.
+
+### Caveman — 토큰 압축, 인용이지 복제가 아니다
+
+`CLAUDE.md`의 `TOKEN COMPRESSION (Caveman Lite)` 규칙은 이름과 핵심 발상 — 코드·명령어·경로·에러 메시지는 그대로 두고 주변 산문만 압축 — 을 [`JuliusBrussee/caveman`](https://github.com/JuliusBrussee/caveman)(출력 토큰 약 65%, 입력 토큰 약 33% 절감으로 측정됨)에서 가져왔습니다. 차이점: caveman은 어떤 클라이언트에도 붙는 프록시로 입출력 양방향을 압축하지만, 이 저장소의 버전은 Claude Code 전용 **출력 규율**로 모델 앞단이 아니라 응답 식별자·Delta Report 포맷과 직접 결합돼 있습니다.
 
 ### Claude Mem — 의도적 제외
 

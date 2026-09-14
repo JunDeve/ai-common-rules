@@ -328,7 +328,7 @@ Injected automatically into every session when the plugin is enabled. No invocat
 
 - **Security Guardrails** — API keys and secrets masked (`[MASKED]`), system paths blocked (`[CRITICAL]`), 5+ file changes require `[CAUTION]` and a Git checkpoint recommendation.
 
-- **Token Compression (Caveman Lite)** — Drops articles, fillers, and pleasantries. Uses fragments, abbreviations, and causal arrows. Suspended inside `[CAUTION]`/`[CRITICAL]` blocks for clarity.
+- **Token Compression (Caveman Lite)** — Drops articles, fillers, and pleasantries. Uses fragments, abbreviations, and causal arrows. Suspended inside `[CAUTION]`/`[CRITICAL]` blocks for clarity. Name and approach cited from [`JuliusBrussee/caveman`](https://github.com/JuliusBrussee/caveman) — see [below](#caveman--token-compression-cited-not-copied) for how the two differ.
 
 - **Anti-Pattern Tracking** — On negative feedback, Claude reads `PATTERNS.md` directly and proposes adding the violation. Items with Hits ≥ 3 are reviewed for promotion to the always-on tier in `CLAUDE.md`.
 
@@ -492,6 +492,10 @@ prior session's decisions are still valid, and comparing HEAD is that check.
 ## Why Superpowers Is a Dependency, Not a Rival
 
 `ai-common-rules` handles behavior control — approval workflow, response identifiers, security guardrails. It deliberately does not define an execution methodology. Superpowers does, and the two meet at the approval boundary: `/grill-me` validates a plan *before* execution starts, Superpowers picks up *right after* approval, turning an approved `[PLAN]` into a spec, a task breakdown, and test-driven implementation. Zero overlap — which is why it's bundled rather than merely suggested.
+
+### Caveman — Token Compression, cited not copied
+
+The `TOKEN COMPRESSION (Caveman Lite)` rule in `CLAUDE.md` shares its name and core idea — compress the surrounding prose, leave code/commands/paths/errors untouched — with [`JuliusBrussee/caveman`](https://github.com/JuliusBrussee/caveman) (measured at ~65% output / ~33% input token reduction). The difference: caveman is a proxy that compresses both directions for any client; this repo's version is Claude Code-specific output discipline, wired into the response identifiers and Delta Report format rather than sitting in front of the model.
 
 ### Claude Mem — deliberately excluded
 
