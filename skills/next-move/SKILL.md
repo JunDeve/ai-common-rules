@@ -1,6 +1,7 @@
 ---
 name: next-move
 description: Reconstruct where a dormant project stopped and propose what to do next, from evidence in the repository. Use when reopening a project after a long gap, inheriting an unfamiliar repository, or when the user asks "where did I leave off", "what should I work on first", or "what was I doing here".
+allowed-tools: Read, Glob, Grep, Bash, Write, Edit
 ---
 
 # Next Move

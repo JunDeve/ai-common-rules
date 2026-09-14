@@ -91,6 +91,13 @@ print("\nskills")
 skill_dirs = sorted(p for p in (ROOT / "skills").iterdir() if p.is_dir()) if (ROOT / "skills").is_dir() else []
 check("skills/ has at least one skill", bool(skill_dirs))
 
+# Tool names a skill's `allowed-tools` frontmatter is allowed to reference.
+# Keep in sync with the built-in tools Claude Code exposes to skills.
+KNOWN_TOOLS = {
+    "Read", "Write", "Edit", "NotebookEdit", "Bash", "Glob", "Grep",
+    "WebFetch", "WebSearch", "Task", "TodoWrite",
+}
+
 for d in skill_dirs:
     md = d / "SKILL.md"
     if not md.exists():
@@ -113,6 +120,19 @@ for d in skill_dirs:
             f"{d.name} name matches directory",
             name.group(1) == d.name,
             f"frontmatter says {name.group(1)!r}",
+        )
+
+    # allowed-tools scopes what a skill can touch. Declared but misspelled is
+    # worse than undeclared -- it silently grants nothing while looking scoped.
+    tools = re.search(r"^allowed-tools:\s*(\S.*)$", fm, re.M)
+    check(f"{d.name} declares allowed-tools", bool(tools))
+    if tools:
+        listed = [t.strip() for t in tools.group(1).split(",") if t.strip()]
+        unknown = [t for t in listed if t not in KNOWN_TOOLS]
+        check(
+            f"{d.name} allowed-tools only names known tools",
+            not unknown,
+            f"unknown: {unknown}",
         )
 
 print("\ndocument links")
