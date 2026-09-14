@@ -67,6 +67,12 @@ if hooks_path.exists():
                         bool(h.get("command")),
                         str(h),
                     )
+                    # A script referenced via ${CLAUDE_PLUGIN_ROOT}/... in args
+                    # has to actually exist, or the hook silently no-ops.
+                    for arg in h.get("args", []):
+                        if arg.startswith("${CLAUDE_PLUGIN_ROOT}/"):
+                            rel = arg[len("${CLAUDE_PLUGIN_ROOT}/"):]
+                            check(f"hooks.json {event}[{i}].hooks[{j}] script exists: {rel}", (ROOT / rel).exists())
 
 if plugin and market:
     entries = {p["name"]: p for p in market.get("plugins", [])}
@@ -100,6 +106,20 @@ if plugin and market:
         src = entry.get("source")
         if isinstance(src, str):
             check(f"source path exists for {name!r}", (ROOT / src).exists(), src)
+
+print("\npython scripts")
+import py_compile
+import tempfile
+
+for py in sorted(ROOT.rglob("*.py")):
+    if ".git" in py.parts:
+        continue
+    with tempfile.TemporaryDirectory() as tmp:
+        try:
+            py_compile.compile(str(py), cfile=str(Path(tmp) / "out.pyc"), doraise=True)
+            check(f"{py.relative_to(ROOT).as_posix()} compiles", True)
+        except py_compile.PyCompileError as exc:
+            check(f"{py.relative_to(ROOT).as_posix()} compiles", False, str(exc))
 
 print("\nskills")
 skill_dirs = sorted(p for p in (ROOT / "skills").iterdir() if p.is_dir()) if (ROOT / "skills").is_dir() else []

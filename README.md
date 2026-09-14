@@ -91,9 +91,12 @@ ai-common-rules/
 ├── install.ps1                        ← One-command installer (Windows PowerShell)
 ├── install.sh                         ← One-command installer (macOS / Linux / Git Bash)
 ├── hooks/
-│   └── hooks.json                     ← PreToolUse security hooks (auto-discovered, no manifest wiring)
+│   ├── hooks.json                     ← PreToolUse security + UserPromptSubmit feedback hooks (auto-discovered)
+│   └── scripts/
+│       └── negative_feedback.py       ← UserPromptSubmit hook body -- detects negative feedback, never blocks
 ├── scripts/
-│   └── validate.py                    ← Structural checks, run by CI and locally
+│   ├── validate.py                    ← Structural checks, run by CI and locally
+│   └── bump_pattern_hits.py           ← Increments a PATTERNS.md entry's Hits count deterministically
 ├── .github/workflows/
 │   └── validate.yml                   ← Runs the checks on every push and PR
 ├── CLAUDE.md                          ← Harness rules (always injected)
@@ -332,7 +335,7 @@ Injected automatically into every session when the plugin is enabled. No invocat
 
 - **Token Compression (Caveman Lite)** — Drops articles, fillers, and pleasantries. Uses fragments, abbreviations, and causal arrows. Suspended inside `[CAUTION]`/`[CRITICAL]` blocks for clarity.
 
-- **Anti-Pattern Tracking** — On negative feedback, Claude reads `PATTERNS.md` directly and proposes adding the violation. Items with Hits ≥ 3 are reviewed for promotion to the always-on tier in `CLAUDE.md`.
+- **Anti-Pattern Tracking** — On negative feedback, Claude reads `PATTERNS.md` directly and proposes adding the violation. Items with Hits ≥ 3 are reviewed for promotion to the always-on tier in `CLAUDE.md`. Detection is a `hooks/hooks.json` `UserPromptSubmit` hook (regex, Korean and English) rather than something Claude has to remember to notice; the Hits count itself is incremented by `scripts/bump_pattern_hits.py`, not hand-edited.
 
 - **Playwright MCP Rules** — Snapshot-first workflow, capability gating, and security guardrails for all `browser_*` tool usage. Full rules in `PLAYWRIGHT.md` (loaded on-demand for browser tasks).
 
@@ -341,6 +344,8 @@ Injected automatically into every session when the plugin is enabled. No invocat
 ## Security Hooks
 
 The `## SECURITY` rules in `CLAUDE.md` are prompt instructions — Claude can violate them if it misjudges a situation. The rules below instead block at the permission layer, before the tool call runs, via `hooks/hooks.json`'s `PreToolUse` hooks. A plugin cannot ship this through `settings.json` (Claude Code only reads the `agent`/`subagentStatusLine` keys from a plugin's own `settings.json`); `hooks/hooks.json` is the supported mechanism, auto-discovered by file convention with no `plugin.json` change needed.
+
+(`hooks/hooks.json` also carries a `UserPromptSubmit` hook unrelated to blocking — see Anti-Pattern Tracking above.)
 
 | Blocked pattern | Backs which `CLAUDE.md` rule |
 |---|---|
