@@ -256,13 +256,15 @@ claude plugin marketplace update ai-common-rules-marketplace
 claude plugin update ai-common-rules@ai-common-rules-marketplace
 ```
 
-Bump `version` in `.claude-plugin/plugin.json` on every release — Claude Code skips an update when the resolved version matches what is cached.
+Bump `version` in `.claude-plugin/plugin.json` on every release — Claude Code skips an update when the resolved version matches what is cached. See [CHANGELOG.md](CHANGELOG.md) for what changed in each release; the plugin's `version` and the `AI AGENT CORE RULES vX.Y` number at the top of `CLAUDE.md` track separately — the harness rules can revise without a plugin release and vice versa.
 
 To track a fixed tag instead of the default branch:
 
 ```bash
-claude plugin marketplace add JunDeve/ai-common-rules@v2.2.0
+claude plugin marketplace add JunDeve/ai-common-rules@v2.0.5
 ```
+
+Only tagged releases can be pinned this way — check `git tag -l` in this repo for what's currently tagged. Newer `plugin.json` versions without a matching tag (see the note at the top of [CHANGELOG.md](CHANGELOG.md)) can only be installed by tracking the default branch. Maintainers: tag each release with `claude plugin tag`.
 
 ### Uninstalling
 

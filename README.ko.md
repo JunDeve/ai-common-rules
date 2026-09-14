@@ -256,13 +256,15 @@ claude plugin marketplace update ai-common-rules-marketplace
 claude plugin update ai-common-rules@ai-common-rules-marketplace
 ```
 
-릴리스마다 `.claude-plugin/plugin.json`의 `version`을 올릴 것 — 캐시된 버전과 같으면 Claude Code가 갱신을 건너뜁니다.
+릴리스마다 `.claude-plugin/plugin.json`의 `version`을 올릴 것 — 캐시된 버전과 같으면 Claude Code가 갱신을 건너뜁니다. 릴리스별 변경 내용은 [CHANGELOG.md](CHANGELOG.md) 참고. 플러그인 `version`과 `CLAUDE.md` 상단의 `AI AGENT CORE RULES vX.Y` 번호는 서로 별개로 관리됩니다 — 플러그인 릴리스 없이 하네스 규칙만 개정될 수 있고, 그 반대도 가능합니다.
 
 기본 브랜치 대신 특정 태그에 고정하려면:
 
 ```bash
-claude plugin marketplace add JunDeve/ai-common-rules@v2.2.0
+claude plugin marketplace add JunDeve/ai-common-rules@v2.0.5
 ```
+
+이 방식은 실제로 태그가 존재하는 릴리스에만 쓸 수 있습니다 — 현재 태그 목록은 저장소에서 `git tag -l`로 확인하세요. 태그가 없는 최신 `plugin.json` 버전([CHANGELOG.md](CHANGELOG.md) 상단 안내 참고)은 기본 브랜치 추적으로만 설치할 수 있습니다. 관리자는 릴리스마다 `claude plugin tag`로 태그를 생성할 것.
 
 ### 제거
 

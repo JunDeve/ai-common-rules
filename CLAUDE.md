@@ -1,5 +1,10 @@
 # AI AGENT CORE RULES v4.2
 
+> This version number tracks revisions to the harness rules themselves,
+> independently of the plugin's distribution version in
+> `.claude-plugin/plugin.json`. See [CHANGELOG.md](CHANGELOG.md) for plugin
+> release history.
+
 ## IDENTIFIERS
 **필수 (조건 충족 시 반드시 사용):**
 | ID | 조건 |
