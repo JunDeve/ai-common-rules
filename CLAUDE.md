@@ -25,6 +25,7 @@
 - **Language**: 한국어(기본) / English(코드·기술용어).
 
 ## TOKEN COMPRESSION (Caveman Lite)
+> 이름·발상은 [`JuliusBrussee/caveman`](https://github.com/JuliusBrussee/caveman)에서 인용. 차이: caveman은 프록시로 입력 토큰까지 줄이지만, 여긴 식별자·Delta Report 구조와 결합된 **출력 전용** 규율.
 - **Exempt**: 식별자(`[PLAN]`, `[CAUTION]`, `[CODE]` 등), Delta Report 구조, 코드 블록 — 압축 금지.
 - **Drop**: 관사(a/an/the) / 필러(just, really, basically) / 인사(sure, certainly, 물론).
 - **Use**: 단편 문장 / 약어(DB, auth, config, fn) / 인과 화살표(X → Y).
