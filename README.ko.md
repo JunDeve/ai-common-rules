@@ -92,6 +92,8 @@ ai-common-rules/
 │   └── plugin.json                    ← 플러그인 매니페스트 + 의존성 + MCP 서버 (Playwright, Context7)
 ├── install.ps1                        ← 원커맨드 설치 스크립트 (Windows PowerShell)
 ├── install.sh                         ← 원커맨드 설치 스크립트 (macOS / Linux / Git Bash)
+├── hooks/
+│   └── hooks.json                     ← PreToolUse 보안 훅 (자동 인식, 매니페스트 수정 불필요)
 ├── scripts/
 │   └── validate.py                    ← 구조 검증. CI와 로컬 양쪽에서 실행
 ├── .github/workflows/
@@ -333,6 +335,23 @@ GitHub 접근이 불가할 때만. 폴더를 zip으로 압축(`.claude-plugin/pl
 - **안티패턴 누적** — 부정 피드백 수신 시 `PATTERNS.md`를 직접 읽어 항목 추가 제안. Hits ≥ 3 항목은 `CLAUDE.md` 항상 적용 티어 승급 검토.
 
 - **Playwright MCP 규칙** — Snapshot 우선 워크플로우, capability 게이팅, 보안 가드레일 적용. 전체 규칙은 `PLAYWRIGHT.md`에 기재 (브라우저 작업 시 온디맨드 로드).
+
+---
+
+## 보안 훅
+
+`CLAUDE.md`의 `## SECURITY` 규칙은 프롬프트 지시입니다 — Claude가 상황을 잘못 판단하면 어길 수 있습니다. 아래 규칙들은 대신 tool 호출이 실행되기 전, permission 레벨에서 `hooks/hooks.json`의 `PreToolUse` 훅으로 차단합니다. 플러그인은 `settings.json`으로 이걸 배포할 수 없습니다 (Claude Code는 플러그인 자체 `settings.json`에서 `agent`/`subagentStatusLine` 키만 읽습니다) — `hooks/hooks.json`이 공식 지원 방식이며, 파일 규칙으로 자동 인식돼 `plugin.json` 수정이 필요 없습니다.
+
+| 차단 패턴 | 대응하는 `CLAUDE.md` 규칙 |
+|---|---|
+| `Read(**/.env*)` | Zero-Exfiltration |
+| `Bash(cat *.env*)`, `Bash(type *.env*)` | Zero-Exfiltration |
+| `Bash(rm -rf *)` | Destructive Gate / 안티패턴 T05 |
+| `Bash(git push --force*)`, `Bash(git push -f *)` | Destructive Gate |
+| `Bash(git reset --hard*)` | Destructive Gate |
+| `Bash(sudo *)` | Destructive Gate |
+
+각 항목은 스크립트로 판단하지 않고 무조건 차단(`exit 2`)합니다 — `if` 매처가 이미 정확한 패턴으로 좁혀놨고, 인라인 명령어는 Claude Code가 Git Bash로 실행하든 PowerShell로 실행하든(Windows에 Git Bash가 없으면 PowerShell로 대체) 동일하게 동작해야 하는데, `exit <code>`만이 둘에서 같은 의미를 보장하기 때문입니다 — OS별 스크립트 쌍을 따로 유지할 필요가 없습니다.
 
 ---
 

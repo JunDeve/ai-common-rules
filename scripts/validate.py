@@ -54,6 +54,20 @@ print("manifests")
 plugin = load_json(".claude-plugin/plugin.json")
 market = load_json(".claude-plugin/marketplace.json")
 
+hooks_path = ROOT / "hooks" / "hooks.json"
+if hooks_path.exists():
+    hooks = load_json("hooks/hooks.json")
+    if hooks is not None:
+        check("hooks/hooks.json has a top-level 'hooks' object", isinstance(hooks.get("hooks"), dict))
+        for event, groups in hooks.get("hooks", {}).items():
+            for i, group in enumerate(groups):
+                for j, h in enumerate(group.get("hooks", [])):
+                    check(
+                        f"hooks.json {event}[{i}].hooks[{j}] declares command",
+                        bool(h.get("command")),
+                        str(h),
+                    )
+
 if plugin and market:
     entries = {p["name"]: p for p in market.get("plugins", [])}
     check(

@@ -1,0 +1,25 @@
+{
+  "description": "Blocks destructive or secret-exposing commands before they run, deterministically -- backs the CLAUDE.md ## SECURITY rules instead of relying on prompt discipline alone. See README.md#security-hooks for the mapping.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Read",
+        "hooks": [
+          { "type": "command", "if": "Read(**/.env*)", "command": "exit 2" }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          { "type": "command", "if": "Bash(cat *.env*)", "command": "exit 2" },
+          { "type": "command", "if": "Bash(type *.env*)", "command": "exit 2" },
+          { "type": "command", "if": "Bash(rm -rf *)", "command": "exit 2" },
+          { "type": "command", "if": "Bash(git push --force*)", "command": "exit 2" },
+          { "type": "command", "if": "Bash(git push -f *)", "command": "exit 2" },
+          { "type": "command", "if": "Bash(git reset --hard*)", "command": "exit 2" },
+          { "type": "command", "if": "Bash(sudo *)", "command": "exit 2" }
+        ]
+      }
+    ]
+  }
+}
