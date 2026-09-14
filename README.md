@@ -446,6 +446,15 @@ Run commands are read out of whichever marker file was detected rather than hard
 
 See [`PROJECT_STATE.md`](#project_statemd) for the artifact it writes and how staleness is decided.
 
+### Coverage: where these four don't reach
+
+```
+[start] ── [design] ────── [implement] ───────── [refactor] ──────────── [handoff]
+   ?      grill-me     frontend-design      improve-codebase-...        next-move
+```
+
+Starting from an empty repo — no plan, no existing code to react to — isn't covered by anything in this repo. It doesn't need to be: `superpowers`' `brainstorming` skill (bundled as a dependency, see [What's Included](#whats-included)) already turns a bare idea into an approved design before `writing-plans` picks it up, which is the same job a `/start` skill here would do. Building one anyway would be two skills doing the same thing from two different plugins loaded in the same session.
+
 ---
 
 ## MCP Servers (Always-On)
@@ -519,7 +528,9 @@ prior session's decisions are still valid, and comparing HEAD is that check.
 
 ### Claude Mem — deliberately excluded
 
-Claude Mem adds persistent cross-session memory (SQLite + vector store, auto-summarized from tool activity). Skip it if you're already relying on Claude Code's built-in auto-memory system — running both means duplicate context injection and no single source of truth for project state.
+[`thedotmack/claude-mem`](https://github.com/thedotmack/claude-mem) has rebranded upstream to "Grok Mem" (package still published as `claude-mem`), broadening from Claude Code specifically to agents generally — the exclusion judgment below isn't about that name, and holds regardless of it.
+
+Claude Mem/Grok Mem adds persistent cross-session memory (SQLite + vector store, auto-summarized from tool activity). Skip it if you're already relying on Claude Code's built-in auto-memory system — running both means duplicate context injection and no single source of truth for project state. Excluding a memory layer only holds up if this repo's own substitute is solid: `PATTERNS.md`'s feedback loop is no longer prompt-only either (see [Anti-Pattern Tracking](#harness-claudemd)) — detection and Hits-counting are now hook-enforced, not something Claude has to remember to do on its own.
 
 ---
 
