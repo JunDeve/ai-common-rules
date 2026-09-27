@@ -31,6 +31,23 @@ Full walkthrough: [Installation](#installation).
 
 ---
 
+## What Changes
+
+Two concrete comparisons — illustrative, not benchmarks. No token-count or "X% smaller" numbers appear here: a real one would need the same model, the same task, and several repetitions to be worth trusting, and this README isn't going to publish a number it can't back up. What follows is what actually differs, described plainly instead.
+
+**A file read that shouldn't happen.** Ask an unmodified Claude Code session to read a `.env` file and whether it complies is a judgment call the model makes in the moment. With this plugin installed, it isn't: `hooks/hooks.json`'s `PreToolUse` hook denies `Read(**/.env*)` before the tool call ever runs (see [Security Hooks](#security-hooks)) — the same is true for `rm -rf`, forced pushes, and hard resets. Nothing to persuade; the call never reaches the model's discretion.
+
+**How a completed task gets reported.** Without a harness, a typical completion reads like *"I've gone ahead and updated the auth module to use JWT tokens instead of sessions! I added expiration validation in src/auth.js and bumped the connection pool size in middleware/session.js. Let me know if you'd like any adjustments!"* — representative prose, not a captured transcript. `CLAUDE.md`'s Delta Report format requires the same completion to look like this instead, taken verbatim from `CLAUDE.md`'s own `GOLDEN EXAMPLES`:
+
+```
+Δ
++ src/auth.js L44: JWT 만료 시간 검증 로직 추가
+~ middleware/session.js L12: pool size 10→20 변경
+Risk: M / Files: 2
+```
+
+---
+
 ## Quick Reference
 
 **Install on a new machine** — clone, then run one script. Nothing else.
@@ -91,9 +108,12 @@ ai-common-rules/
 ├── install.ps1                        ← One-command installer (Windows PowerShell)
 ├── install.sh                         ← One-command installer (macOS / Linux / Git Bash)
 ├── hooks/
-│   └── hooks.json                     ← PreToolUse security hooks (auto-discovered, no manifest wiring)
+│   ├── hooks.json                     ← PreToolUse security + UserPromptSubmit feedback hooks (auto-discovered)
+│   └── scripts/
+│       └── negative_feedback.py       ← UserPromptSubmit hook body -- detects negative feedback, never blocks
 ├── scripts/
-│   └── validate.py                    ← Structural checks, run by CI and locally
+│   ├── validate.py                    ← Structural checks, run by CI and locally
+│   └── bump_pattern_hits.py           ← Increments a PATTERNS.md entry's Hits count deterministically
 ├── .github/workflows/
 │   └── validate.yml                   ← Runs the checks on every push and PR
 ├── CLAUDE.md                          ← Harness rules (always injected)
@@ -334,7 +354,7 @@ Injected automatically into every session when the plugin is enabled. No invocat
 
 - **Token Compression (Caveman Lite)** — Drops articles, fillers, and pleasantries. Uses fragments, abbreviations, and causal arrows. Suspended inside `[CAUTION]`/`[CRITICAL]` blocks for clarity. Name and approach cited from [`JuliusBrussee/caveman`](https://github.com/JuliusBrussee/caveman) — see [below](#caveman--token-compression-cited-not-copied) for how the two differ.
 
-- **Anti-Pattern Tracking** — On negative feedback, Claude reads `PATTERNS.md` directly and proposes adding the violation. Items with Hits ≥ 3 are reviewed for promotion to the always-on tier in `CLAUDE.md`.
+- **Anti-Pattern Tracking** — On negative feedback, Claude reads `PATTERNS.md` directly and proposes adding the violation. Items with Hits ≥ 3 are reviewed for promotion to the always-on tier in `CLAUDE.md`. Detection is a `hooks/hooks.json` `UserPromptSubmit` hook (regex, Korean and English) rather than something Claude has to remember to notice; the Hits count itself is incremented by `scripts/bump_pattern_hits.py`, not hand-edited.
 
 - **Playwright MCP Rules** — Snapshot-first workflow, capability gating, and security guardrails for all `browser_*` tool usage. Full rules in `PLAYWRIGHT.md` (loaded on-demand for browser tasks).
 
@@ -343,6 +363,8 @@ Injected automatically into every session when the plugin is enabled. No invocat
 ## Security Hooks
 
 The `## SECURITY` rules in `CLAUDE.md` are prompt instructions — Claude can violate them if it misjudges a situation. The rules below instead block at the permission layer, before the tool call runs, via `hooks/hooks.json`'s `PreToolUse` hooks. A plugin cannot ship this through `settings.json` (Claude Code only reads the `agent`/`subagentStatusLine` keys from a plugin's own `settings.json`); `hooks/hooks.json` is the supported mechanism, auto-discovered by file convention with no `plugin.json` change needed.
+
+(`hooks/hooks.json` also carries a `UserPromptSubmit` hook unrelated to blocking — see Anti-Pattern Tracking above.)
 
 | Blocked pattern | Backs which `CLAUDE.md` rule |
 |---|---|
@@ -445,6 +467,15 @@ Run commands are read out of whichever marker file was detected rather than hard
 
 See [`PROJECT_STATE.md`](#project_statemd) for the artifact it writes and how staleness is decided.
 
+### Coverage: where these four don't reach
+
+```
+[start] ── [design] ────── [implement] ───────── [refactor] ──────────── [handoff]
+   ?      grill-me     frontend-design      improve-codebase-...        next-move
+```
+
+Starting from an empty repo — no plan, no existing code to react to — isn't covered by anything in this repo. It doesn't need to be: `superpowers`' `brainstorming` skill (bundled as a dependency, see [What's Included](#whats-included)) already turns a bare idea into an approved design before `writing-plans` picks it up, which is the same job a `/start` skill here would do. Building one anyway would be two skills doing the same thing from two different plugins loaded in the same session.
+
 ---
 
 ## MCP Servers (Always-On)
@@ -522,7 +553,9 @@ The `TOKEN COMPRESSION (Caveman Lite)` rule in `CLAUDE.md` shares its name and c
 
 ### Claude Mem — deliberately excluded
 
-Claude Mem adds persistent cross-session memory (SQLite + vector store, auto-summarized from tool activity). Skip it if you're already relying on Claude Code's built-in auto-memory system — running both means duplicate context injection and no single source of truth for project state.
+[`thedotmack/claude-mem`](https://github.com/thedotmack/claude-mem) has rebranded upstream to "Grok Mem" (package still published as `claude-mem`), broadening from Claude Code specifically to agents generally — the exclusion judgment below isn't about that name, and holds regardless of it.
+
+Claude Mem/Grok Mem adds persistent cross-session memory (SQLite + vector store, auto-summarized from tool activity). Skip it if you're already relying on Claude Code's built-in auto-memory system — running both means duplicate context injection and no single source of truth for project state. Excluding a memory layer only holds up if this repo's own substitute is solid: `PATTERNS.md`'s feedback loop is no longer prompt-only either (see [Anti-Pattern Tracking](#harness-claudemd)) — detection and Hits-counting are now hook-enforced, not something Claude has to remember to do on its own.
 
 ---
 
