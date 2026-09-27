@@ -26,7 +26,6 @@ Full walkthrough: [Installation](#installation).
 | **Skill** | `/next-move` | On-demand slash command | Reconstructs where a dormant project stopped from repository evidence, then proposes three candidates for what to do next |
 | **MCP** | Playwright | Always-on browser control | Lets Claude directly navigate, interact with, and inspect web pages via `browser_*` tools |
 | **MCP** | Context7 | Always-on docs lookup | Fetches real-time, version-specific official documentation to prevent hallucinated or deprecated API usage |
-| **Dependency** | `superpowers` | Auto-installed plugin | `brainstorm → spec → plan → TDD` execution methodology, systematic debugging, git branch workflow |
 | **Dependency** | `superpowers-developing-for-claude-code` | Auto-installed plugin | Skills + bundled official docs for authoring plugins, skills, and MCP servers |
 
 ---
@@ -71,17 +70,11 @@ afterwards. Details and the manual path: [Installation](#installation).
 | `/improve-codebase-architecture` | Finds shallow modules and proposes deepening refactors |
 | `/frontend-design` | Builds UI committed to a deliberate aesthetic direction |
 
-**From the bundled dependencies** — mostly invoked by Claude when the situation
-calls for them rather than typed. The ones worth knowing by name:
+**From the bundled dependency** — invoked by Claude when the situation calls
+for it rather than typed:
 
 | Skill | When it takes over |
 |---|---|
-| `brainstorming` | Before any creative work — turns an idea into an approved design |
-| `writing-plans` | Turns an approved design into an implementation plan |
-| `test-driven-development` | Before writing implementation code |
-| `systematic-debugging` | On any bug or unexpected behavior, before proposing a fix |
-| `requesting-code-review` | Before merging |
-| `verification-before-completion` | Before claiming anything is done — demands evidence |
 | `developing-claude-code-plugins` | When working on a plugin, including this one |
 
 **Managing the install**
@@ -197,7 +190,7 @@ Expected tail: `✔ Successfully added marketplace: ai-common-rules-marketplace`
 claude plugin install ai-common-rules@ai-common-rules-marketplace
 ```
 
-`superpowers` and `superpowers-developing-for-claude-code` are declared as `dependencies` in `plugin.json`, so they are fetched and enabled in the same step — you do not install them separately.
+`superpowers-developing-for-claude-code` is declared as a `dependencies` entry in `plugin.json`, so it's fetched and enabled in the same step — you do not install it separately.
 
 **3. Verify**
 
@@ -205,11 +198,10 @@ claude plugin install ai-common-rules@ai-common-rules-marketplace
 claude plugin list
 ```
 
-Three plugins, all `✔ enabled`, all on `@ai-common-rules-marketplace`:
+Two plugins, both `✔ enabled`, both on `@ai-common-rules-marketplace`:
 
 ```
 ❯ ai-common-rules@ai-common-rules-marketplace                        enabled
-❯ superpowers@ai-common-rules-marketplace                            enabled
 ❯ superpowers-developing-for-claude-code@ai-common-rules-marketplace enabled
 ```
 
@@ -230,6 +222,12 @@ claude plugin marketplace remove superpowers-marketplace
 ```
 ```bash
 claude plugin marketplace remove local-desktop-app-uploads
+```
+
+Also uninstall `superpowers` if a version 2.2.0-or-earlier install pulled it in as a dependency — since v2.3.0 it's no longer bundled:
+
+```bash
+claude plugin uninstall superpowers@ai-common-rules-marketplace
 ```
 
 Then run the *Setting up a new machine* steps above.
@@ -311,17 +309,16 @@ claude --plugin-dir <path-to-ai-common-rules>
 
 Only when GitHub is unreachable. Zip the folder (must include `.claude-plugin/plugin.json`), then **Code** tab → **Customize** → **Personal Plugins +** → **Upload Plugin**.
 
-> A manually uploaded copy does **not** auto-update and does **not** resolve `dependencies` — Superpowers must then be installed separately. Prefer the marketplace route.
+> A manually uploaded copy does **not** auto-update and does **not** resolve `dependencies` — `superpowers-developing-for-claude-code` must then be installed separately. Prefer the marketplace route.
 
 ---
 
 ## Bundled Upstream Plugins
 
-The marketplace links these upstream repos directly — no vendored copies, no submodules. Each stays on its own release line and updates independently.
+The marketplace links this upstream repo directly — no vendored copy, no submodule. It stays on its own release line and updates independently.
 
 | Plugin | Upstream | Role |
 |---|---|---|
-| `superpowers` | [obra/superpowers](https://github.com/obra/superpowers) | `brainstorm → spec → plan → TDD` execution methodology, systematic debugging, git branch workflow |
 | `superpowers-developing-for-claude-code` | [obra/superpowers-developing-for-claude-code](https://github.com/obra/superpowers-developing-for-claude-code) | Skills + bundled official docs for authoring plugins, skills, and MCP servers |
 
 To customize one, fork it and swap the `source` URL in `.claude-plugin/marketplace.json` — no structural change needed.
@@ -427,7 +424,7 @@ On first run, these are auto-created in your project:
 
 ### `/frontend-design`
 
-**Source:** Adapted from Anthropic's official `frontend-design` skill, unlike the other three skills in this repo, which are original. Bundled inline rather than linked upstream like `superpowers` (see [Bundled Upstream Plugins](#bundled-upstream-plugins)) since Anthropic doesn't distribute it as its own plugin repo.
+**Source:** Adapted from Anthropic's official `frontend-design` skill, unlike the other three skills in this repo, which are original. Bundled inline rather than linked upstream like `superpowers-developing-for-claude-code` (see [Bundled Upstream Plugins](#bundled-upstream-plugins)) since Anthropic doesn't distribute it as its own plugin repo.
 
 **Role:** Generates distinctive, production-grade UI by committing to a bold aesthetic direction before writing any code. Avoids generic AI defaults (Inter font, purple gradients, predictable layouts).
 
@@ -474,7 +471,7 @@ See [`PROJECT_STATE.md`](#project_statemd) for the artifact it writes and how st
    ?      grill-me     frontend-design      improve-codebase-...        next-move
 ```
 
-Starting from an empty repo — no plan, no existing code to react to — isn't covered by anything in this repo. It doesn't need to be: `superpowers`' `brainstorming` skill (bundled as a dependency, see [What's Included](#whats-included)) already turns a bare idea into an approved design before `writing-plans` picks it up, which is the same job a `/start` skill here would do. Building one anyway would be two skills doing the same thing from two different plugins loaded in the same session.
+Starting from an empty repo — no plan, no existing code to react to — isn't covered by anything in this repo, and unlike earlier, that's a genuine gap rather than a deliberate non-duplication: `superpowers` (whose `brainstorming` skill covers exactly this) isn't bundled as of v2.3.0, and isn't in this marketplace at all anymore (see [CHANGELOG.md](CHANGELOG.md)). Install it from its own source yourself if you want that stage covered — `claude plugin marketplace add obra/superpowers` then `claude plugin install superpowers` — or start from a plan you already have in hand.
 
 ---
 
@@ -543,9 +540,7 @@ prior session's decisions are still valid, and comparing HEAD is that check.
 
 ---
 
-## Why Superpowers Is a Dependency, Not a Rival
-
-`ai-common-rules` handles behavior control — approval workflow, response identifiers, security guardrails. It deliberately does not define an execution methodology. Superpowers does, and the two meet at the approval boundary: `/grill-me` validates a plan *before* execution starts, Superpowers picks up *right after* approval, turning an approved `[PLAN]` into a spec, a task breakdown, and test-driven implementation. Zero overlap — which is why it's bundled rather than merely suggested.
+## Related Projects
 
 ### Caveman — Token Compression, cited not copied
 

@@ -1,6 +1,6 @@
 {
   "name": "ai-common-rules",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "description": "Harness (behavior rules) + skills for Claude Code. Enforces response identifiers, approval workflow, security guardrails, and token compression.",
   "author": {
     "name": "JunDeve",
@@ -17,7 +17,6 @@
     "workflow"
   ],
   "dependencies": [
-    "superpowers",
     "superpowers-developing-for-claude-code"
   ],
   "mcpServers": {
