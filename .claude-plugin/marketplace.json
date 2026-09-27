@@ -21,14 +21,6 @@
       ]
     },
     {
-      "name": "superpowers",
-      "source": {
-        "source": "url",
-        "url": "https://github.com/obra/superpowers.git"
-      },
-      "description": "Upstream (obra/superpowers). Core skills library: TDD, debugging, planning, collaboration patterns."
-    },
-    {
       "name": "superpowers-developing-for-claude-code",
       "source": {
         "source": "url",

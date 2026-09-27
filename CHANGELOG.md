@@ -14,6 +14,13 @@ rules, pre-`plugin.json`) is not itemized.
 > for tagged versions; see [README.md](README.md#updating-on-demand). Tag
 > each release with `claude plugin tag` to close this gap.
 
+## [2.3.0] - 2026-09-27 (untagged)
+### Removed
+- `superpowers` dropped from `dependencies` and from the marketplace catalog entirely — it no longer installs automatically, and isn't reachable via `@ai-common-rules-marketplace` at all. `superpowers-developing-for-claude-code` is unaffected and still bundled. Install `superpowers` yourself from its own source (`claude plugin marketplace add obra/superpowers`) if you want it.
+### Changed
+- `skills/next-move/SKILL.md` no longer unconditionally invokes the `writing-plans` skill (from `superpowers`) at handoff — it checks whether the skill is available first and hands the candidate to the user directly otherwise.
+- README "Coverage" note reworded: the empty-repo start stage is now an acknowledged gap rather than something `superpowers` fills by default.
+
 ## [2.2.0] - 2026-09-11 (untagged)
 ### Added
 - `/next-move` skill — reconstructs where a dormant project stopped from
