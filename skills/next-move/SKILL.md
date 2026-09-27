@@ -11,8 +11,9 @@ this stop**, and **what is worth doing next**.
 
 Every other tool here assumes the user already holds the context.
 `/improve-codebase-architecture` finds shallow modules but never asks why work
-stopped. `writing-plans` starts from a goal already chosen. This skill runs
-before them and produces the input they need.
+stopped. A planning skill like `writing-plans` (from the optional `superpowers`
+plugin, not bundled with this one) starts from a goal already chosen. This
+skill runs before that and produces the input it needs.
 
 Work through the four stages in order. Do not skip ahead to recommendations —
 a candidate that does not trace back to collected evidence is a guess.
@@ -129,11 +130,13 @@ more useful than listing it as work to resume.
 Once the user picks one:
 
 1. Write `PROJECT_STATE.md` to the target project's root (template below).
-2. Invoke the `writing-plans` skill with the chosen candidate and the evidence
-   behind it.
+2. If the `writing-plans` skill is available (from the optional `superpowers`
+   plugin), invoke it with the chosen candidate and the evidence behind it.
+   Otherwise, hand the candidate and evidence to the user directly and stop —
+   do not improvise an implementation plan in its place.
 
-This skill answers *what to do*. `writing-plans` answers *how*. Do not write
-the implementation plan here.
+This skill answers *what to do*. Turning that into *how* is `writing-plans`'
+job, not this skill's, whether or not it happens to be installed.
 
 ## PROJECT_STATE.md
 
