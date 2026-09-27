@@ -28,7 +28,6 @@ claude plugin install ai-common-rules@ai-common-rules-marketplace
 | **스킬** | `/next-move` | 온디맨드 슬래시 커맨드 | 방치된 프로젝트의 중단 지점을 저장소 증거로 복원 → 다음 한 수 3개 제시 |
 | **MCP** | Playwright | 항시 가동 브라우저 제어 | `browser_*` 툴로 웹 페이지 탐색·조작·검사를 Claude가 직접 수행 |
 | **MCP** | Context7 | 항시 가동 문서 조회 | 실시간 공식 문서 fetch → 할루시네이션·deprecated API 방지 |
-| **의존성** | `superpowers` | 자동 설치 플러그인 | `brainstorm → spec → plan → TDD` 실행 방법론, 체계적 디버깅, git 브랜치 워크플로 |
 | **의존성** | `superpowers-developing-for-claude-code` | 자동 설치 플러그인 | 플러그인·스킬·MCP 서버 제작용 스킬 + 공식 문서 동봉 |
 
 ---
@@ -73,17 +72,11 @@ macOS·Linux·Git Bash에서는 `./install.sh`. 끝나면 Claude Code 재시작.
 | `/improve-codebase-architecture` | 얕은 모듈 탐지 → 깊게 만드는 리팩터 제안 |
 | `/frontend-design` | 의도된 미적 방향을 확정하고 UI 구현 |
 
-**의존성이 제공하는 스킬** — 대부분 직접 타이핑하지 않고 상황에 맞춰 Claude가
-자동 호출합니다. 이름을 알아둘 만한 것들:
+**번들 의존성이 제공하는 스킬** — 직접 타이핑하지 않고 상황에 맞춰 Claude가
+자동 호출합니다:
 
 | 스킬 | 언제 개입하나 |
 |---|---|
-| `brainstorming` | 창작 작업 전 — 아이디어를 승인된 설계로 |
-| `writing-plans` | 승인된 설계를 구현 계획으로 |
-| `test-driven-development` | 구현 코드를 쓰기 전 |
-| `systematic-debugging` | 버그·예상 밖 동작 발생 시, 수정안 제시 전 |
-| `requesting-code-review` | 머지 전 |
-| `verification-before-completion` | "완료" 주장 전 — 증거를 요구 |
 | `developing-claude-code-plugins` | 플러그인 작업 시 (이 저장소 포함) |
 
 **설치 관리**
@@ -198,7 +191,7 @@ claude plugin marketplace add JunDeve/ai-common-rules
 claude plugin install ai-common-rules@ai-common-rules-marketplace
 ```
 
-`superpowers`와 `superpowers-developing-for-claude-code`는 `plugin.json`에 `dependencies`로 선언돼 있어 **같은 단계에서 자동으로 설치·활성화**됩니다. 따로 설치하지 마세요.
+`superpowers-developing-for-claude-code`는 `plugin.json`에 `dependencies`로 선언돼 있어 **같은 단계에서 자동으로 설치·활성화**됩니다. 따로 설치하지 마세요.
 
 **3. 검증**
 
@@ -206,11 +199,10 @@ claude plugin install ai-common-rules@ai-common-rules-marketplace
 claude plugin list
 ```
 
-3개 전부 `✔ enabled`, 전부 `@ai-common-rules-marketplace` 소속이어야 정상:
+2개 전부 `✔ enabled`, 전부 `@ai-common-rules-marketplace` 소속이어야 정상:
 
 ```
 ❯ ai-common-rules@ai-common-rules-marketplace                        enabled
-❯ superpowers@ai-common-rules-marketplace                            enabled
 ❯ superpowers-developing-for-claude-code@ai-common-rules-marketplace enabled
 ```
 
@@ -231,6 +223,12 @@ claude plugin marketplace remove superpowers-marketplace
 ```
 ```bash
 claude plugin marketplace remove local-desktop-app-uploads
+```
+
+v2.2.0 이하 버전에서 `superpowers`가 dependency로 딸려 설치됐다면 그것도 제거 — v2.3.0부터 번들되지 않습니다:
+
+```bash
+claude plugin uninstall superpowers@ai-common-rules-marketplace
 ```
 
 이후 위 *새 PC에 설치* 절차를 그대로 진행.
@@ -311,17 +309,16 @@ claude --plugin-dir <ai-common-rules 경로>
 
 GitHub 접근이 불가할 때만. 폴더를 zip으로 압축(`.claude-plugin/plugin.json` 포함 필수) → **Code** 탭 → **Customize** → **개인 플러그인** → **플러그인 업로드**.
 
-> 수동 업로드본은 **자동 갱신되지 않고 `dependencies`도 해석하지 않습니다** — Superpowers를 따로 설치해야 합니다. 마켓플레이스 방식을 권장합니다.
+> 수동 업로드본은 **자동 갱신되지 않고 `dependencies`도 해석하지 않습니다** — `superpowers-developing-for-claude-code`를 따로 설치해야 합니다. 마켓플레이스 방식을 권장합니다.
 
 ---
 
 ## 흡수한 업스트림 플러그인
 
-마켓플레이스가 업스트림 저장소를 **링크만** 합니다 — 코드 복사본도, submodule도 없음. 각자의 릴리스 라인에서 독립적으로 갱신됩니다.
+마켓플레이스가 업스트림 저장소를 **링크만** 합니다 — 코드 복사본도, submodule도 없음. 독립적으로 갱신됩니다.
 
 | 플러그인 | 업스트림 | 역할 |
 |---|---|---|
-| `superpowers` | [obra/superpowers](https://github.com/obra/superpowers) | `brainstorm → spec → plan → TDD` 실행 방법론, 체계적 디버깅, git 브랜치 워크플로 |
 | `superpowers-developing-for-claude-code` | [obra/superpowers-developing-for-claude-code](https://github.com/obra/superpowers-developing-for-claude-code) | 플러그인·스킬·MCP 서버 제작용 스킬 + 공식 문서 동봉 |
 
 입맛대로 고치고 싶어지면 → fork 후 `.claude-plugin/marketplace.json`의 `source` URL 한 줄만 교체. 구조 변경 불필요.
@@ -426,7 +423,7 @@ auth 모듈을 세션 방식에서 JWT로 리팩터할 계획이야
 
 ### `/frontend-design`
 
-**출처:** Anthropic 공식 `frontend-design` 스킬을 가져온 것 — 이 저장소의 나머지 3개 스킬은 자체 제작이지만 이것만 다릅니다. `superpowers`처럼 업스트림 링크 방식([흡수한 업스트림 플러그인](#흡수한-업스트림-플러그인) 참고) 대신 내부에 그대로 포함한 이유는 Anthropic이 이걸 별도 플러그인 저장소로 배포하지 않기 때문입니다.
+**출처:** Anthropic 공식 `frontend-design` 스킬을 가져온 것 — 이 저장소의 나머지 3개 스킬은 자체 제작이지만 이것만 다릅니다. `superpowers-developing-for-claude-code`처럼 업스트림 링크 방식([흡수한 업스트림 플러그인](#흡수한-업스트림-플러그인) 참고) 대신 내부에 그대로 포함한 이유는 Anthropic이 이걸 별도 플러그인 저장소로 배포하지 않기 때문입니다.
 
 **역할:** 코딩 전 명확한 미적 방향을 확정하고 개성 있는 프로덕션 UI 생성. AI 기본값(Inter 폰트, 보라 그라디언트, 예측 가능한 레이아웃) 회피.
 
@@ -473,7 +470,7 @@ auth 모듈을 세션 방식에서 JWT로 리팩터할 계획이야
   ?      grill-me   frontend-design   improve-codebase-...     next-move
 ```
 
-계획도 없고 반응할 기존 코드도 없는 빈 저장소에서 시작하는 지점은 이 저장소의 어떤 스킬도 다루지 않습니다. 다룰 필요가 없습니다 — 의존성으로 번들된 `superpowers`의 `brainstorming` 스킬([전체 구성](#전체-구성) 참고)이 이미 아이디어를 승인된 설계로 바꿔주고, 그 뒤를 `writing-plans`가 이어받습니다. 여기에 `/start` 스킬을 새로 만든다면 같은 세션에 로드된 두 플러그인이 같은 일을 하게 될 뿐입니다.
+계획도 없고 반응할 기존 코드도 없는 빈 저장소에서 시작하는 지점은 이 저장소의 어떤 스킬도 다루지 않고, 이전과 달리 이건 의도적인 비중복이 아니라 진짜 공백입니다: `brainstorming`이 정확히 이 지점을 다루는 `superpowers`가 v2.3.0부터 더 이상 번들되지 않고, 이 마켓플레이스에서 아예 빠졌습니다([CHANGELOG.md](CHANGELOG.md) 참고). 이 단계를 채우고 싶으면 직접 설치하세요 — `claude plugin marketplace add obra/superpowers` 후 `claude plugin install superpowers` — 아니면 이미 손에 쥔 계획에서 시작하세요.
 
 ---
 
@@ -540,9 +537,7 @@ auth 모듈을 세션 방식에서 JWT로 리팩터할 계획이야
 
 ---
 
-## Superpowers가 경쟁자가 아니라 의존성인 이유
-
-`ai-common-rules`는 행동 제어(승인 워크플로우, 응답 식별자, 보안 가드레일)를 담당하고, 실행 방법론은 의도적으로 정의하지 않습니다. Superpowers가 그 역할을 맡고, 둘은 **승인 경계에서 만납니다** — `/grill-me`는 실행 *전* 계획 검증, Superpowers는 승인 *직후*부터 승인된 `[PLAN]`을 spec·작업 분해·TDD 구현으로 이어받음. 겹치는 지점이 0이라 단순 추천이 아니라 번들로 묶었습니다.
+## 관련 프로젝트
 
 ### Caveman — 토큰 압축, 인용이지 복제가 아니다
 

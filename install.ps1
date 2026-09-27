@@ -4,8 +4,8 @@
 #   or:  powershell -ExecutionPolicy Bypass -File install.ps1
 #
 # Registers this repository as a plugin marketplace and installs the plugin.
-# superpowers and superpowers-developing-for-claude-code come along as declared
-# dependencies -- they are not installed separately.
+# superpowers-developing-for-claude-code comes along as a declared dependency
+# -- it is not installed separately.
 #
 # Written for Windows PowerShell 5.1, so no '&&', no ternary, no null-coalescing.
 
@@ -99,6 +99,6 @@ Write-Host @'
 Done. Restart Claude Code (or run /reload-plugins) so the harness and the
 MCP servers load.
 
-Expect three plugins, all enabled, all on @ai-common-rules-marketplace:
-  ai-common-rules, superpowers, superpowers-developing-for-claude-code
+Expect two plugins, both enabled, both on @ai-common-rules-marketplace:
+  ai-common-rules, superpowers-developing-for-claude-code
 '@ -ForegroundColor Cyan
