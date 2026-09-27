@@ -1,6 +1,8 @@
 # PATTERNS — ON-DEMAND
 부정 피드백 수신 시 이 파일을 읽어 항목 추가·Hits 갱신 제안. Hits ≥ 3 → CLAUDE.md C/H 테이블 승급 검토.
 
+부정 피드백 감지는 `hooks/hooks.json`의 `UserPromptSubmit` 훅이 자동으로 함 (정규식 매칭, 한국어/영어). Hits 증가는 숫자를 직접 고치지 말고 `python scripts/bump_pattern_hits.py <ID>` 실행 — 기존 행이 없으면 먼저 아래 "기록 형식"대로 행을 추가한 뒤 실행.
+
 ## 기록 형식
 ```
 | ID | Sev | Anti-Pattern | 교정 방법 | Hits | LastSeen |

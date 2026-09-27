@@ -33,6 +33,23 @@ claude plugin install ai-common-rules@ai-common-rules-marketplace
 
 ---
 
+## 무엇이 달라지나
+
+두 가지 구체적 비교 — 벤치마크 아님. 토큰 수나 "X% 감소" 같은 수치는 여기 없습니다: 진짜 신뢰할 만한 수치라면 같은 모델·같은 태스크로 여러 번 반복해야 하는데, 이 README는 뒷받침할 수 없는 숫자를 싣지 않습니다. 대신 실제로 무엇이 다른지를 그대로 서술합니다.
+
+**일어나선 안 될 파일 읽기.** 수정하지 않은 Claude Code 세션에 `.env` 파일을 읽으라고 하면, 실제로 따를지는 그 순간 모델의 판단에 달려 있습니다. 이 플러그인을 설치하면 그렇지 않습니다 — `hooks/hooks.json`의 `PreToolUse` 훅이 `Read(**/.env*)`를 tool 호출이 실행되기도 전에 차단합니다([보안 훅](#보안-훅) 참고) — `rm -rf`, 강제 push, hard reset도 마찬가지. 설득할 대상 자체가 없습니다: 호출이 모델의 재량에 도달하기 전에 끝납니다.
+
+**완료 보고가 어떻게 달라지나.** 하네스가 없으면 전형적인 완료 보고는 이런 식입니다: *"auth 모듈을 세션 방식에서 JWT 토큰 방식으로 바꿨어요! src/auth.js에 만료 검증도 추가했고, middleware/session.js의 커넥션 풀 크기도 늘렸습니다. 추가로 조정할 부분 있으면 말씀해주세요!"* — 실제 캡처한 트랜스크립트가 아니라 비정형 출력의 대표적인 예시입니다. `CLAUDE.md`의 Delta Report 형식은 같은 완료 보고가 이렇게 나오도록 강제합니다 — `CLAUDE.md`의 `GOLDEN EXAMPLES`에서 그대로 가져온 것:
+
+```
+Δ
++ src/auth.js L44: JWT 만료 시간 검증 로직 추가
+~ middleware/session.js L12: pool size 10→20 변경
+Risk: M / Files: 2
+```
+
+---
+
 ## 명령어 한눈에
 
 **새 PC 설치** — 클론 후 스크립트 1개. 그게 전부.
@@ -93,9 +110,12 @@ ai-common-rules/
 ├── install.ps1                        ← 원커맨드 설치 스크립트 (Windows PowerShell)
 ├── install.sh                         ← 원커맨드 설치 스크립트 (macOS / Linux / Git Bash)
 ├── hooks/
-│   └── hooks.json                     ← PreToolUse 보안 훅 (자동 인식, 매니페스트 수정 불필요)
+│   ├── hooks.json                     ← PreToolUse 보안 훅 + UserPromptSubmit 피드백 훅 (자동 인식)
+│   └── scripts/
+│       └── negative_feedback.py       ← UserPromptSubmit 훅 본체 -- 부정 피드백 감지, 절대 차단 안 함
 ├── scripts/
-│   └── validate.py                    ← 구조 검증. CI와 로컬 양쪽에서 실행
+│   ├── validate.py                    ← 구조 검증. CI와 로컬 양쪽에서 실행
+│   └── bump_pattern_hits.py           ← PATTERNS.md 항목의 Hits 카운트를 결정론적으로 증가
 ├── .github/workflows/
 │   └── validate.yml                   ← 모든 push·PR에서 검증 실행
 ├── CLAUDE.md                          ← 하네스 규칙 (매 세션 자동 주입)
@@ -334,7 +354,7 @@ GitHub 접근이 불가할 때만. 폴더를 zip으로 압축(`.claude-plugin/pl
 
 - **토큰 압축 (Caveman Lite)** — 관사·필러·인사 제거. 단편 문장·약어·인과 화살표 사용. `[CAUTION]`/`[CRITICAL]` 블록에서는 압축 해제. 이름·발상은 [`JuliusBrussee/caveman`](https://github.com/JuliusBrussee/caveman)에서 인용 — 차이점은 [아래](#caveman--토큰-압축-인용이지-복제가-아니다) 참조.
 
-- **안티패턴 누적** — 부정 피드백 수신 시 `PATTERNS.md`를 직접 읽어 항목 추가 제안. Hits ≥ 3 항목은 `CLAUDE.md` 항상 적용 티어 승급 검토.
+- **안티패턴 누적** — 부정 피드백 수신 시 `PATTERNS.md`를 직접 읽어 항목 추가 제안. Hits ≥ 3 항목은 `CLAUDE.md` 항상 적용 티어 승급 검토. 감지는 Claude가 알아서 눈치채는 게 아니라 `hooks/hooks.json`의 `UserPromptSubmit` 훅(정규식, 한국어·영어)이 담당하고, Hits 숫자 자체는 직접 고치지 않고 `scripts/bump_pattern_hits.py`가 증가시킵니다.
 
 - **Playwright MCP 규칙** — Snapshot 우선 워크플로우, capability 게이팅, 보안 가드레일 적용. 전체 규칙은 `PLAYWRIGHT.md`에 기재 (브라우저 작업 시 온디맨드 로드).
 
@@ -343,6 +363,8 @@ GitHub 접근이 불가할 때만. 폴더를 zip으로 압축(`.claude-plugin/pl
 ## 보안 훅
 
 `CLAUDE.md`의 `## SECURITY` 규칙은 프롬프트 지시입니다 — Claude가 상황을 잘못 판단하면 어길 수 있습니다. 아래 규칙들은 대신 tool 호출이 실행되기 전, permission 레벨에서 `hooks/hooks.json`의 `PreToolUse` 훅으로 차단합니다. 플러그인은 `settings.json`으로 이걸 배포할 수 없습니다 (Claude Code는 플러그인 자체 `settings.json`에서 `agent`/`subagentStatusLine` 키만 읽습니다) — `hooks/hooks.json`이 공식 지원 방식이며, 파일 규칙으로 자동 인식돼 `plugin.json` 수정이 필요 없습니다.
+
+(`hooks/hooks.json`에는 차단과 무관한 `UserPromptSubmit` 훅도 있습니다 — 위 안티패턴 누적 항목 참고.)
 
 | 차단 패턴 | 대응하는 `CLAUDE.md` 규칙 |
 |---|---|
@@ -444,6 +466,15 @@ auth 모듈을 세션 방식에서 JWT로 리팩터할 계획이야
 
 산출물과 stale 판정 기준은 [`PROJECT_STATE.md`](#project_statemd) 참조.
 
+### 커버리지: 이 4개가 못 닿는 지점
+
+```
+[시작] ── [설계] ────── [구현] ───────── [리팩터] ──────────── [인수인계]
+  ?      grill-me   frontend-design   improve-codebase-...     next-move
+```
+
+계획도 없고 반응할 기존 코드도 없는 빈 저장소에서 시작하는 지점은 이 저장소의 어떤 스킬도 다루지 않습니다. 다룰 필요가 없습니다 — 의존성으로 번들된 `superpowers`의 `brainstorming` 스킬([전체 구성](#전체-구성) 참고)이 이미 아이디어를 승인된 설계로 바꿔주고, 그 뒤를 `writing-plans`가 이어받습니다. 여기에 `/start` 스킬을 새로 만든다면 같은 세션에 로드된 두 플러그인이 같은 일을 하게 될 뿐입니다.
+
 ---
 
 ## MCP 서버 (항시 가동)
@@ -519,7 +550,9 @@ auth 모듈을 세션 방식에서 JWT로 리팩터할 계획이야
 
 ### Claude Mem — 의도적 제외
 
-Claude Mem은 세션 간 지속 메모리(SQLite + 벡터 스토어, 툴 사용 기록 자동 요약)를 추가합니다. Claude Code의 내장 auto-memory 시스템을 이미 쓰고 있다면 건너뛰세요 — 둘 다 켜면 컨텍스트가 중복 주입되고 프로젝트 상태의 단일 진실 소스가 사라집니다.
+[`thedotmack/claude-mem`](https://github.com/thedotmack/claude-mem)은 업스트림에서 "Grok Mem"으로 리브랜딩됐습니다 (패키지명은 여전히 `claude-mem`) — Claude Code 전용에서 에이전트 전반으로 범위를 넓힌 것이고, 아래 배제 판단은 이 이름과 무관하게 그대로 유지됩니다.
+
+Claude Mem/Grok Mem은 세션 간 지속 메모리(SQLite + 벡터 스토어, 툴 사용 기록 자동 요약)를 추가합니다. Claude Code의 내장 auto-memory 시스템을 이미 쓰고 있다면 건너뛰세요 — 둘 다 켜면 컨텍스트가 중복 주입되고 프로젝트 상태의 단일 진실 소스가 사라집니다. 메모리 레이어를 배제한 판단은 이 저장소 자체의 대체재가 단단할 때만 성립합니다 — `PATTERNS.md`의 피드백 루프도 이제 프롬프트에만 의존하지 않습니다 ([안티패턴 누적](#하네스-claudemd) 참고): 감지와 Hits 카운팅 모두 Claude가 알아서 기억해야 하는 일이 아니라 훅으로 강제됩니다.
 
 ---
 
