@@ -1,23 +1,31 @@
 {
-  "description": "PreToolUse: blocks destructive or secret-exposing commands before they run, backing CLAUDE.md ## SECURITY (see README.md#security-hooks). UserPromptSubmit: on negative feedback, nudges Claude to update PATTERNS.md instead of relying on it remembering to (see PATTERNS.md and CLAUDE.md GC TRIGGERS).",
+  "description": "PreToolUse: blocks destructive or secret-exposing commands before they run, backing CLAUDE.md ## SECURITY (see README.md#security-hooks). Each rule is a bare `exit 2` entry (denies with no dependencies) plus a node entry that only explains the block. UserPromptSubmit: on negative feedback, nudges Claude to update PATTERNS.md instead of relying on it remembering to (see PATTERNS.md and CLAUDE.md GC TRIGGERS).",
   "hooks": {
     "PreToolUse": [
       {
         "matcher": "Read",
         "hooks": [
-          { "type": "command", "if": "Read(**/.env*)", "command": "exit 2" }
+          { "type": "command", "if": "Read(**/.env*)", "command": "exit 2" },
+          { "type": "command", "if": "Read(**/.env*)", "command": "node", "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/scripts/explain_block.cjs", "read-env"] }
         ]
       },
       {
         "matcher": "Bash",
         "hooks": [
           { "type": "command", "if": "Bash(cat *.env*)", "command": "exit 2" },
+          { "type": "command", "if": "Bash(cat *.env*)", "command": "node", "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/scripts/explain_block.cjs", "bash"] },
           { "type": "command", "if": "Bash(type *.env*)", "command": "exit 2" },
+          { "type": "command", "if": "Bash(type *.env*)", "command": "node", "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/scripts/explain_block.cjs", "bash"] },
           { "type": "command", "if": "Bash(rm -rf *)", "command": "exit 2" },
+          { "type": "command", "if": "Bash(rm -rf *)", "command": "node", "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/scripts/explain_block.cjs", "bash"] },
           { "type": "command", "if": "Bash(git push --force*)", "command": "exit 2" },
+          { "type": "command", "if": "Bash(git push --force*)", "command": "node", "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/scripts/explain_block.cjs", "bash"] },
           { "type": "command", "if": "Bash(git push -f *)", "command": "exit 2" },
+          { "type": "command", "if": "Bash(git push -f *)", "command": "node", "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/scripts/explain_block.cjs", "bash"] },
           { "type": "command", "if": "Bash(git reset --hard*)", "command": "exit 2" },
-          { "type": "command", "if": "Bash(sudo *)", "command": "exit 2" }
+          { "type": "command", "if": "Bash(git reset --hard*)", "command": "node", "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/scripts/explain_block.cjs", "bash"] },
+          { "type": "command", "if": "Bash(sudo *)", "command": "exit 2" },
+          { "type": "command", "if": "Bash(sudo *)", "command": "node", "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/scripts/explain_block.cjs", "bash"] }
         ]
       }
     ],

@@ -93,6 +93,24 @@ set it. See [Staying current](#staying-current-while-you-leave-the-project-alone
 
 ---
 
+## Recent Changes
+
+Current release: **v2.4.1**. Full history, including everything older: [CHANGELOG.md](CHANGELOG.md).
+
+**2026-10-14**
+
+- **Added `/reverse-port`** (v2.4.0). Manual-only skill that analyzes an app, binary or package you already have with [REA](https://github.com/morluto/rea), then ports one feature's behavior into your project. It asks about authorization first and runs REA as a pinned one-off `npx` command; nothing is registered with Claude Code. See [Related Projects](#related-projects) for why REA is invoked, not bundled.
+- **Fixed skill tool permissions.** `allowed-tools` pre-approves tools for the turn, it doesn't restrict them. `next-move`, `frontend-design` and `improve-codebase-architecture` no longer pre-approve Bash/Write/Edit, and `grill-me` is now genuinely read-only through `disallowed-tools`. `validate.py` rejects a blanket Bash/Write/Edit pre-approval from now on.
+- **Fixed silent security-hook blocks.** A blocked command used to show only `No stderr output`; it now says why. The deny itself is unchanged and still dependency-free, and `validate.py` enforces that. Commands Claude Code can't parse (typically an odd number of single quotes in a heredoc) are blocked too; the message and [Security Hooks](#security-hooks) explain the workaround.
+- **Fixed** `/next-move` docs claiming it always calls `writing-plans`, which stopped being bundled in v2.3.0.
+
+**Earlier**
+
+- 2026-09-27, v2.3.0 — `superpowers` removed as a dependency and from the marketplace.
+- 2026-09-14 — security hooks, negative-feedback automation, CHANGELOG, Caveman attribution, skill frontmatter, before/after section.
+
+---
+
 ## Structure
 
 ```
@@ -105,6 +123,7 @@ ai-common-rules/
 ├── hooks/
 │   ├── hooks.json                     ← PreToolUse security + UserPromptSubmit feedback hooks (auto-discovered)
 │   └── scripts/
+│       ├── explain_block.cjs          ← Prints why a security hook blocked a call (the deny itself is a bare `exit 2`)
 │       └── negative_feedback.py       ← UserPromptSubmit hook body -- detects negative feedback, never blocks
 ├── scripts/
 │   ├── validate.py                    ← Structural checks, run by CI and locally
@@ -376,7 +395,11 @@ The `## SECURITY` rules in `CLAUDE.md` are prompt instructions — Claude can vi
 | `Bash(git reset --hard*)` | Destructive Gate |
 | `Bash(sudo *)` | Destructive Gate |
 
-Each entry denies unconditionally (`exit 2`) rather than running a script to decide, deliberately: the `if` matcher already narrows to an exact pattern, and an inline command has to work identically whether Claude Code runs it through Git Bash or PowerShell (Windows without Git Bash falls back to PowerShell) — `exit <code>` is the only construct guaranteed to mean the same thing in both, so no per-OS script pair to maintain.
+Each rule has two entries. The first denies unconditionally (`exit 2`) rather than running a script to decide, deliberately: the `if` matcher already narrows to an exact pattern, and an inline command has to work identically whether Claude Code runs it through Git Bash or PowerShell (Windows without Git Bash falls back to PowerShell) — `exit <code>` is the only construct guaranteed to mean the same thing in both. It also needs no interpreter, so the rule still blocks on a machine without Node. A script-based hook would fail *open* there, because a failed spawn is non-blocking.
+
+The second entry runs `hooks/scripts/explain_block.cjs`, which prints why the call was blocked to stderr. Without it a block shows only `No stderr output`. `scripts/validate.py` fails any rule left without its bare `exit 2` entry.
+
+**When a command is blocked and shouldn't be.** If Claude Code cannot parse a Bash command with confidence, it runs every `if`-filtered hook anyway, so the deny rules fail closed. The usual trigger is an odd number of unquoted single quotes inside a heredoc, for example a Python `'''` string containing an apostrophe. Simplify the command, or write the script to a file first and run that.
 
 ---
 

@@ -14,8 +14,10 @@ rules, pre-`plugin.json`) is not itemized.
 > for tagged versions; see [README.md](README.md#updating-on-demand). Tag
 > each release with `claude plugin tag` to close this gap.
 
-## [Unreleased]
+## [2.4.1] - 2026-10-14 (untagged)
 ### Fixed
+- Security hooks blocked silently: a denied call showed only `No stderr output`. Each deny rule in `hooks/hooks.json` is now paired with an entry that runs `hooks/scripts/explain_block.cjs`, which prints why. The original bare `exit 2` entry stays, because it needs no interpreter and a script-based hook would fail open on a machine without Node (a failed spawn is non-blocking). `scripts/validate.py` fails any rule that loses its bare `exit 2` entry.
+- Documented why a legitimate command can be blocked: when Claude Code cannot parse a Bash command with confidence, it runs every `if`-filtered hook anyway. Reproduced with a Python heredoc whose `'''` string contained an apostrophe. Removing the apostrophe made the same command pass.
 - Skill tool permissions were set up on a wrong premise. `allowed-tools` **pre-approves** tools for the turn that invokes a skill (no permission prompt); it does not restrict anything. The earlier change used it as if it scoped what each skill could touch, which left `next-move` with a blanket Bash/Write/Edit pre-approval and `grill-me` not actually read-only. Removed the pre-approvals from `next-move`, `frontend-design` and `improve-codebase-architecture`, and gave `grill-me` a real restriction with `disallowed-tools: Write, Edit, NotebookEdit, Bash`.
 - `scripts/validate.py` no longer requires `allowed-tools` on every skill. It now rejects a blanket `Bash`/`Write`/`Edit`/`NotebookEdit` pre-approval (a `Bash(...)` pattern is fine) and validates tool names in both `allowed-tools` and `disallowed-tools`.
 - README descriptions of `/next-move` said it always invokes `writing-plans`; since v2.3.0 that skill is optional, and the text now says so.

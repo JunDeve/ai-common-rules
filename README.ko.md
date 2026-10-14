@@ -95,6 +95,24 @@ macOS·Linux·Git Bash에서는 `./install.sh`. 끝나면 Claude Code 재시작.
 
 ---
 
+## 최근 변경
+
+현재 릴리스: **v2.4.1**. 이전 이력을 포함한 전체: [CHANGELOG.md](CHANGELOG.md).
+
+**2026-10-14**
+
+- **`/reverse-port` 추가** (v2.4.0). 이미 가진 앱·바이너리·패키지를 [REA](https://github.com/morluto/rea)로 분석하고 기능 하나의 동작을 내 프로젝트로 이식하는 수동 전용 스킬. 권한부터 확인하고 REA는 버전 고정된 일회성 `npx` 명령으로 실행하며, Claude Code에는 아무것도 등록하지 않습니다. REA를 번들하지 않고 호출하는 이유는 [관련 프로젝트](#관련-프로젝트) 참고.
+- **스킬 도구 권한 수정.** `allowed-tools`는 도구를 제한하는 게 아니라 그 턴에 미리 승인합니다. `next-move`·`frontend-design`·`improve-codebase-architecture`는 더 이상 Bash/Write/Edit를 사전 승인하지 않고, `grill-me`는 `disallowed-tools`로 실제 읽기 전용이 됐습니다. `validate.py`는 이제 Bash/Write/Edit 통째 사전 승인을 거부합니다.
+- **보안 훅의 무음 차단 수정.** 차단되면 예전엔 `No stderr output`만 보였는데, 이제 이유를 알려줍니다. 차단 자체는 그대로이고 여전히 의존성이 없으며 `validate.py`가 이를 강제합니다. Claude Code가 파싱하지 못하는 명령(보통 heredoc 안의 홀수 개 작은따옴표)도 차단되는데, 메시지와 [보안 훅](#보안-훅)에 우회 방법이 있습니다.
+- **수정:** `/next-move`가 항상 `writing-plans`를 호출한다고 적힌 문서 — v2.3.0부터 번들되지 않습니다.
+
+**이전**
+
+- 2026-09-27, v2.3.0 — `superpowers`를 의존성과 마켓플레이스에서 제거.
+- 2026-09-14 — 보안 훅, 부정 피드백 자동화, CHANGELOG, Caveman 출처 표기, 스킬 frontmatter, 전/후 비교 섹션.
+
+---
+
 ## 구조
 
 ```
@@ -107,6 +125,7 @@ ai-common-rules/
 ├── hooks/
 │   ├── hooks.json                     ← PreToolUse 보안 훅 + UserPromptSubmit 피드백 훅 (자동 인식)
 │   └── scripts/
+│       ├── explain_block.cjs          ← 보안 훅이 호출을 막은 이유를 출력 (차단 자체는 순수 `exit 2`)
 │       └── negative_feedback.py       ← UserPromptSubmit 훅 본체 -- 부정 피드백 감지, 절대 차단 안 함
 ├── scripts/
 │   ├── validate.py                    ← 구조 검증. CI와 로컬 양쪽에서 실행
@@ -376,7 +395,11 @@ GitHub 접근이 불가할 때만. 폴더를 zip으로 압축(`.claude-plugin/pl
 | `Bash(git reset --hard*)` | Destructive Gate |
 | `Bash(sudo *)` | Destructive Gate |
 
-각 항목은 스크립트로 판단하지 않고 무조건 차단(`exit 2`)합니다 — `if` 매처가 이미 정확한 패턴으로 좁혀놨고, 인라인 명령어는 Claude Code가 Git Bash로 실행하든 PowerShell로 실행하든(Windows에 Git Bash가 없으면 PowerShell로 대체) 동일하게 동작해야 하는데, `exit <code>`만이 둘에서 같은 의미를 보장하기 때문입니다 — OS별 스크립트 쌍을 따로 유지할 필요가 없습니다.
+규칙마다 항목이 두 개입니다. 첫 번째는 스크립트로 판단하지 않고 무조건 차단(`exit 2`)합니다 — `if` 매처가 이미 정확한 패턴으로 좁혀놨고, 인라인 명령어는 Claude Code가 Git Bash로 실행하든 PowerShell로 실행하든(Windows에 Git Bash가 없으면 PowerShell로 대체) 동일하게 동작해야 하는데, `exit <code>`만이 둘에서 같은 의미를 보장하기 때문입니다. 인터프리터도 필요 없어서 Node가 없는 PC에서도 규칙이 그대로 차단합니다. 스크립트 기반 훅이었다면 거기서는 *열린 채로* 실패합니다 — 실행 실패는 차단으로 취급되지 않기 때문입니다.
+
+두 번째 항목은 `hooks/scripts/explain_block.cjs`를 실행해 차단 이유를 stderr로 출력합니다. 이게 없으면 차단 시 `No stderr output`만 보입니다. 규칙에 순수 `exit 2` 항목이 빠지면 `scripts/validate.py`가 실패시킵니다.
+
+**막히면 안 되는 명령이 막힐 때.** Claude Code가 Bash 명령을 확신 있게 파싱하지 못하면 `if` 필터가 걸린 훅을 전부 실행하므로 deny 규칙은 닫힌 쪽(fail closed)으로 동작합니다. 흔한 원인은 heredoc 안에서 따옴표 밖의 작은따옴표가 홀수 개인 경우입니다 — 예를 들어 파이썬 `'''` 문자열 안의 apostrophe. 명령을 단순화하거나 스크립트를 파일로 먼저 쓴 뒤 실행하세요.
 
 ---
 

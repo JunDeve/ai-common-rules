@@ -74,6 +74,21 @@ if hooks_path.exists():
                             rel = arg[len("${CLAUDE_PLUGIN_ROOT}/"):]
                             check(f"hooks.json {event}[{i}].hooks[{j}] script exists: {rel}", (ROOT / rel).exists())
 
+        # Every deny rule must keep a bare `exit 2` entry. Entries that run a
+        # script (node, python) fail open when the interpreter is missing: the
+        # spawn error is non-blocking, so the call would go through unchecked.
+        for i, group in enumerate(hooks.get("hooks", {}).get("PreToolUse", [])):
+            rules = {h["if"] for h in group.get("hooks", []) if h.get("if")}
+            fail_closed = {
+                h["if"] for h in group.get("hooks", [])
+                if h.get("if") and h.get("command") == "exit 2" and not h.get("args")
+            }
+            check(
+                f"hooks.json PreToolUse[{i}]: every deny rule has a dependency-free `exit 2` entry",
+                rules == fail_closed,
+                f"missing for: {sorted(rules - fail_closed)}",
+            )
+
 if plugin and market:
     entries = {p["name"]: p for p in market.get("plugins", [])}
     check(
