@@ -14,6 +14,12 @@ rules, pre-`plugin.json`) is not itemized.
 > for tagged versions; see [README.md](README.md#updating-on-demand). Tag
 > each release with `claude plugin tag` to close this gap.
 
+## [Unreleased]
+### Fixed
+- Skill tool permissions were set up on a wrong premise. `allowed-tools` **pre-approves** tools for the turn that invokes a skill (no permission prompt); it does not restrict anything. The earlier change used it as if it scoped what each skill could touch, which left `next-move` with a blanket Bash/Write/Edit pre-approval and `grill-me` not actually read-only. Removed the pre-approvals from `next-move`, `frontend-design` and `improve-codebase-architecture`, and gave `grill-me` a real restriction with `disallowed-tools: Write, Edit, NotebookEdit, Bash`.
+- `scripts/validate.py` no longer requires `allowed-tools` on every skill. It now rejects a blanket `Bash`/`Write`/`Edit`/`NotebookEdit` pre-approval (a `Bash(...)` pattern is fine) and validates tool names in both `allowed-tools` and `disallowed-tools`.
+- README descriptions of `/next-move` said it always invokes `writing-plans`; since v2.3.0 that skill is optional, and the text now says so.
+
 ## [2.3.0] - 2026-09-27 (untagged)
 ### Removed
 - `superpowers` dropped from `dependencies` and from the marketplace catalog entirely — it no longer installs automatically, and isn't reachable via `@ai-common-rules-marketplace` at all. `superpowers-developing-for-claude-code` is unaffected and still bundled. Install `superpowers` yourself from its own source (`claude plugin marketplace add obra/superpowers`) if you want it.

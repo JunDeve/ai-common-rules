@@ -125,12 +125,28 @@ print("\nskills")
 skill_dirs = sorted(p for p in (ROOT / "skills").iterdir() if p.is_dir()) if (ROOT / "skills").is_dir() else []
 check("skills/ has at least one skill", bool(skill_dirs))
 
-# Tool names a skill's `allowed-tools` frontmatter is allowed to reference.
-# Keep in sync with the built-in tools Claude Code exposes to skills.
+# `allowed-tools` PRE-APPROVES tools for the turn that invokes a skill: they run
+# without a permission prompt. It restricts nothing. Restricting is
+# `disallowed-tools`, which removes tools from the pool while the skill is
+# active (Claude Code skills docs, "Pre-approve tools for a skill").
+# Keep KNOWN_TOOLS in sync with the built-in tools Claude Code exposes.
 KNOWN_TOOLS = {
     "Read", "Write", "Edit", "NotebookEdit", "Bash", "Glob", "Grep",
     "WebFetch", "WebSearch", "Task", "TodoWrite",
 }
+# Pre-approving these without a pattern skips the permission prompt for every
+# call, which defeats the approval workflow the rest of this repo enforces.
+APPROVAL_GATED = {"Bash", "Write", "Edit", "NotebookEdit"}
+TOOL_TOKEN = re.compile(r"([A-Za-z_]\w*)(\([^)]*\))?")
+
+
+def tool_field(fm: str, field: str):
+    """(present, [(tool, pattern-or-None)]) for an inline tools field."""
+    line = re.search(rf"^{field}:[ \t]*(.*)$", fm, re.M)
+    if not line:
+        return False, []
+    return True, [(m.group(1), m.group(2)) for m in TOOL_TOKEN.finditer(line.group(1))]
+
 
 for d in skill_dirs:
     md = d / "SKILL.md"
@@ -156,17 +172,21 @@ for d in skill_dirs:
             f"frontmatter says {name.group(1)!r}",
         )
 
-    # allowed-tools scopes what a skill can touch. Declared but misspelled is
-    # worse than undeclared -- it silently grants nothing while looking scoped.
-    tools = re.search(r"^allowed-tools:\s*(\S.*)$", fm, re.M)
-    check(f"{d.name} declares allowed-tools", bool(tools))
-    if tools:
-        listed = [t.strip() for t in tools.group(1).split(",") if t.strip()]
-        unknown = [t for t in listed if t not in KNOWN_TOOLS]
+    for field in ("allowed-tools", "disallowed-tools"):
+        present, toks = tool_field(fm, field)
+        if not present:
+            continue
+        check(f"{d.name} {field} is an inline list", bool(toks), "write 'A, B', not a YAML list")
+        unknown = [t for t, _ in toks if t not in KNOWN_TOOLS]
+        check(f"{d.name} {field} only names known tools", not unknown, f"unknown: {unknown}")
+
+    present, toks = tool_field(fm, "allowed-tools")
+    if present:
+        blanket = sorted({t for t, pat in toks if t in APPROVAL_GATED and pat is None})
         check(
-            f"{d.name} allowed-tools only names known tools",
-            not unknown,
-            f"unknown: {unknown}",
+            f"{d.name} allowed-tools does not blanket-approve Bash/Write/Edit",
+            not blanket,
+            f"{blanket} would skip the permission prompt on every call; drop them or use a Bash(...) pattern",
         )
 
 print("\ndocument links")

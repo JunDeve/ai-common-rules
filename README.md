@@ -445,7 +445,7 @@ What happens:
 
 ### `/next-move`
 
-**Role:** Reconstructs where a project stopped from repository evidence, then proposes three candidates for what to do next and hands the chosen one to `writing-plans`.
+**Role:** Reconstructs where a project stopped from repository evidence, then proposes three candidates for what to do next and hands the chosen one to a planning skill such as `writing-plans` (from `superpowers`, not bundled) if one is installed — otherwise to you directly.
 
 **When to use:** Reopening a project after a long gap, inheriting an unfamiliar repository, or any time the honest answer to "what should I do here?" is "I don't remember."
 
@@ -458,7 +458,7 @@ What happens:
 1. **Static collection** — commit cadence, branch divergence, stashes, uncommitted work, dated `TODO`/`FIXME` markers, stack detection from marker files, README claims checked against reality, CI presence. Read-only, no side effects.
 2. **Timeline** — one paragraph narrating what the evidence shows. Every claim traces to a collected value; nothing is inferred about intent.
 3. **Execution gate** — builds and tests run only after a `[CAUTION]` approval, with dependency installation called out separately because it mutates the working tree. Declining does not abort the scan; it records the reduced confidence instead.
-4. **Candidates** — three, each naming the evidence behind it, scored H/M/L on impact, cost, and risk. Retiring stale work counts as a candidate. Picking one writes `PROJECT_STATE.md` and invokes `writing-plans`.
+4. **Candidates** — three, each naming the evidence behind it, scored H/M/L on impact, cost, and risk. Retiring stale work counts as a candidate. Picking one writes `PROJECT_STATE.md` and invokes `writing-plans` if that skill is available; otherwise the candidate and its evidence go straight back to you.
 
 Run commands are read out of whichever marker file was detected rather than hardcoded, so a new ecosystem costs nothing. When no marker file matches, the skill asks instead of guessing.
 
