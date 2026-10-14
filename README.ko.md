@@ -37,7 +37,7 @@ claude plugin install ai-common-rules@ai-common-rules-marketplace
 
 두 가지 구체적 비교 — 벤치마크 아님. 토큰 수나 "X% 감소" 같은 수치는 여기 없습니다: 진짜 신뢰할 만한 수치라면 같은 모델·같은 태스크로 여러 번 반복해야 하는데, 이 README는 뒷받침할 수 없는 숫자를 싣지 않습니다. 대신 실제로 무엇이 다른지를 그대로 서술합니다.
 
-**일어나선 안 될 파일 읽기.** 수정하지 않은 Claude Code 세션에 `.env` 파일을 읽으라고 하면, 실제로 따를지는 그 순간 모델의 판단에 달려 있습니다. 이 플러그인을 설치하면 그렇지 않습니다 — `hooks/hooks.json`의 `PreToolUse` 훅이 `Read(**/.env*)`를 tool 호출이 실행되기도 전에 차단합니다([보안 훅](#보안-훅) 참고) — `rm -rf`, 강제 push, hard reset도 마찬가지. 설득할 대상 자체가 없습니다: 호출이 모델의 재량에 도달하기 전에 끝납니다.
+**일어나선 안 될 파일 읽기.** 수정하지 않은 Claude Code 세션에 `.env` 파일을 읽으라고 하면, 실제로 따를지는 그 순간 모델의 판단에 달려 있습니다. 이 플러그인을 설치하면 흔한 경우는 그렇지 않습니다 — `hooks/hooks.json`의 `PreToolUse` 훅이 `.env` 파일 읽기를 tool 호출이 실행되기도 전에 차단하고, `rm -rf`, 강제 push, hard reset도 Bash와 PowerShell 양쪽에서 마찬가지로 막습니다([보안 훅](#보안-훅) 참고). 패턴 규칙이라 의도적으로 우회하는 방법은 있고, 그 목록은 해당 섹션에 정확히 적어뒀습니다. 그래도 평범한 요청은 모델의 재량에 도달하지 못합니다.
 
 **완료 보고가 어떻게 달라지나.** 하네스가 없으면 전형적인 완료 보고는 이런 식입니다: *"auth 모듈을 세션 방식에서 JWT 토큰 방식으로 바꿨어요! src/auth.js에 만료 검증도 추가했고, middleware/session.js의 커넥션 풀 크기도 늘렸습니다. 추가로 조정할 부분 있으면 말씀해주세요!"* — 실제 캡처한 트랜스크립트가 아니라 비정형 출력의 대표적인 예시입니다. `CLAUDE.md`의 Delta Report 형식은 같은 완료 보고가 이렇게 나오도록 강제합니다 — `CLAUDE.md`의 `GOLDEN EXAMPLES`에서 그대로 가져온 것:
 
@@ -97,7 +97,7 @@ macOS·Linux·Git Bash에서는 `./install.sh`. 끝나면 Claude Code 재시작.
 
 ## 최근 변경
 
-현재 릴리스: **v2.4.1**. 이전 이력을 포함한 전체: [CHANGELOG.md](CHANGELOG.md).
+현재 릴리스: **v2.4.2**. 이전 이력을 포함한 전체: [CHANGELOG.md](CHANGELOG.md).
 
 **2026-10-14**
 
@@ -105,6 +105,7 @@ macOS·Linux·Git Bash에서는 `./install.sh`. 끝나면 Claude Code 재시작.
 - **스킬 도구 권한 수정.** `allowed-tools`는 도구를 제한하는 게 아니라 그 턴에 미리 승인합니다. `next-move`·`frontend-design`·`improve-codebase-architecture`는 더 이상 Bash/Write/Edit를 사전 승인하지 않고, `grill-me`는 `disallowed-tools`로 실제 읽기 전용이 됐습니다. `validate.py`는 이제 Bash/Write/Edit 통째 사전 승인을 거부합니다.
 - **보안 훅의 무음 차단 수정.** 차단되면 예전엔 `No stderr output`만 보였는데, 이제 이유를 알려줍니다. 차단 자체는 그대로이고 여전히 의존성이 없으며 `validate.py`가 이를 강제합니다. Claude Code가 파싱하지 못하는 명령(보통 heredoc 안의 홀수 개 작은따옴표)도 차단되는데, 메시지와 [보안 훅](#보안-훅)에 우회 방법이 있습니다.
 - **수정:** `/next-move`가 항상 `writing-plans`를 호출한다고 적힌 문서 — v2.3.0부터 번들되지 않습니다.
+- **Windows 테스트로 찾은 보안 빈틈 3개 해결** (v2.4.2). PowerShell 툴에는 규칙이 하나도 없어서 `Get-Content .env`가 그대로 읽혔고, `.env` Read 규칙은 작업 디렉터리 안에서만 매칭됐으며, `/grill-me`는 PowerShell이 남아 있어 읽기 전용이 아니었습니다. 셋 다 막았고, README에 규칙이 여전히 막지 못하는 것을 적었으며, 확실한 차단용 `settings.json` 스니펫(선택 적용)도 넣었습니다.
 
 **이전**
 
@@ -382,24 +383,52 @@ GitHub 접근이 불가할 때만. 폴더를 zip으로 압축(`.claude-plugin/pl
 
 ## 보안 훅
 
-`CLAUDE.md`의 `## SECURITY` 규칙은 프롬프트 지시입니다 — Claude가 상황을 잘못 판단하면 어길 수 있습니다. 아래 규칙들은 대신 tool 호출이 실행되기 전, permission 레벨에서 `hooks/hooks.json`의 `PreToolUse` 훅으로 차단합니다. 플러그인은 `settings.json`으로 이걸 배포할 수 없습니다 (Claude Code는 플러그인 자체 `settings.json`에서 `agent`/`subagentStatusLine` 키만 읽습니다) — `hooks/hooks.json`이 공식 지원 방식이며, 파일 규칙으로 자동 인식돼 `plugin.json` 수정이 필요 없습니다.
+`CLAUDE.md`의 `## SECURITY` 규칙은 프롬프트 지시입니다 — Claude가 상황을 잘못 판단하면 어길 수 있습니다. 아래 규칙들은 대신 tool 호출이 실행되기 전에 `hooks/hooks.json`의 `PreToolUse` 훅으로 차단합니다. 플러그인은 `settings.json`으로 이걸 배포할 수 없습니다 (Claude Code는 플러그인 자체 `settings.json`에서 `agent`/`subagentStatusLine` 키만 읽습니다) — `hooks/hooks.json`이 공식 지원 방식이며, 파일 규칙으로 자동 인식돼 `plugin.json` 수정이 필요 없습니다.
 
 (`hooks/hooks.json`에는 차단과 무관한 `UserPromptSubmit` 훅도 있습니다 — 위 안티패턴 누적 항목 참고.)
 
 | 차단 패턴 | 대응하는 `CLAUDE.md` 규칙 |
 |---|---|
-| `Read(**/.env*)` | Zero-Exfiltration |
-| `Bash(cat *.env*)`, `Bash(type *.env*)` | Zero-Exfiltration |
-| `Bash(rm -rf *)` | Destructive Gate / 안티패턴 T05 |
-| `Bash(git push --force*)`, `Bash(git push -f *)` | Destructive Gate |
-| `Bash(git reset --hard*)` | Destructive Gate |
-| `Bash(sudo *)` | Destructive Gate |
+| `Read(**/.env*)`, `Read(//**/.env*)` | Zero-Exfiltration |
+| `Bash(cat *.env*)`, `Bash(type *.env*)`, `PowerShell(Get-Content *.env*)` | Zero-Exfiltration |
+| `Bash(rm -rf *)`, `PowerShell(Remove-Item *-Recurse*)` | Destructive Gate / 안티패턴 T05 |
+| `git push --force*`, `git push -f *` (Bash·PowerShell 모두) | Destructive Gate |
+| `git reset --hard*` (Bash·PowerShell 모두) | Destructive Gate |
+| `Bash(sudo *)`, `PowerShell(sudo *)`, `PowerShell(Start-Process *RunAs*)` | Destructive Gate |
+
+PowerShell은 Bash와 별개의 도구이면서 Windows의 기본 셸이라서, Bash만 매칭하면 PowerShell 호출은 전부 규칙 밖에 남습니다. `scripts/validate.py`는 Bash 그룹이 있는데 PowerShell 그룹이 없으면 실패합니다. Claude Code가 매칭 전에 PowerShell 별칭을 정규화하므로 `Get-Content` 규칙은 `cat`, `type`, `gc`도 덮도록 되어 있습니다. `Read` 규칙이 두 개인 이유: 첫 번째(`**/.env*`)는 gitignore식 패턴이라 작업 디렉터리 안에서만 매칭되고, `//**/.env*`는 파일시스템 루트에 고정된 형태라 디스크 어디서든 매칭됩니다. Windows에서는 경로가 먼저 POSIX 형태로 정규화됩니다(`C:\Users\x` → `/c/Users/x`).
 
 규칙마다 항목이 두 개입니다. 첫 번째는 스크립트로 판단하지 않고 무조건 차단(`exit 2`)합니다 — `if` 매처가 이미 정확한 패턴으로 좁혀놨고, 인라인 명령어는 Claude Code가 Git Bash로 실행하든 PowerShell로 실행하든(Windows에 Git Bash가 없으면 PowerShell로 대체) 동일하게 동작해야 하는데, `exit <code>`만이 둘에서 같은 의미를 보장하기 때문입니다. 인터프리터도 필요 없어서 Node가 없는 PC에서도 규칙이 그대로 차단합니다. 스크립트 기반 훅이었다면 거기서는 *열린 채로* 실패합니다 — 실행 실패는 차단으로 취급되지 않기 때문입니다.
 
 두 번째 항목은 `hooks/scripts/explain_block.cjs`를 실행해 차단 이유를 stderr로 출력합니다. 이게 없으면 차단 시 `No stderr output`만 보입니다. 규칙에 순수 `exit 2` 항목이 빠지면 `scripts/validate.py`가 실패시킵니다.
 
 **막히면 안 되는 명령이 막힐 때.** Claude Code가 Bash 명령을 확신 있게 파싱하지 못하면 `if` 필터가 걸린 훅을 전부 실행하므로 deny 규칙은 닫힌 쪽(fail closed)으로 동작합니다. 흔한 원인은 heredoc 안에서 따옴표 밖의 작은따옴표가 홀수 개인 경우입니다 — 예를 들어 파이썬 `'''` 문자열 안의 apostrophe. 명령을 단순화하거나 스크립트를 파일로 먼저 쓴 뒤 실행하세요.
+
+**이 규칙들이 막지 못하는 것.** 패턴 매칭이고, Claude Code 공식 문서도 `if` 필터를 최선 노력(best-effort)이라 부르며 확실한 차단에는 권한 시스템을 권합니다. 실제로는:
+
+- 인자 변형은 빠져나갑니다: `rm -fr`, 쪼갠 플래그, `Remove-Item -r` 같은 PowerShell 파라미터 축약.
+- `.env`를 읽는 다른 방법은 막지 못합니다: `head`, `grep`, `Select-String`. Claude Code는 Grep과 Glob에 `Read` 규칙을 최선 노력으로만 적용합니다.
+- 작업 디렉터리 밖 `.env` 규칙(`//**/.env*`)과 PowerShell 별칭 처리는 문서 기준이고, 여기서 실제로 돌려보지는 않았습니다. Bash 규칙과 디렉터리 안 `Read` 규칙은 실제로 확인했습니다.
+
+**확실한 차단은 직접 선택해서 켜세요.** 플러그인은 `permissions`를 배포할 수 없지만(위 참고), 내 `~/.claude/settings.json`에는 deny 규칙을 넣을 수 있습니다. `if` 필터와 달리 권한 시스템은 Claude Code가 강제합니다. 이 저장소는 설정 파일을 건드리지 않습니다. 문법은 permissions 문서에서 가져온 것이고 여기서 테스트하지는 않았습니다:
+
+```json
+{
+  "permissions": {
+    "deny": [
+      "Read(//**/.env*)",
+      "Bash(rm -rf *)",
+      "Bash(git push --force*)",
+      "Bash(git push -f *)",
+      "Bash(git reset --hard*)",
+      "PowerShell(Remove-Item *-Recurse*)",
+      "PowerShell(git push --force*)",
+      "PowerShell(git push -f *)",
+      "PowerShell(git reset --hard*)"
+    ]
+  }
+}
+```
 
 ---
 

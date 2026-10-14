@@ -4,12 +4,17 @@
 // blocks with no dependencies. This script only supplies the explanation, so if
 // node is missing the call is still denied -- just silently.
 //
-// Usage: node explain_block.cjs <read-env|bash>
+// Usage: node explain_block.cjs <read-env|bash|powershell>
 
 const messages = {
   "read-env":
     "ai-common-rules hook blocked this Read: reading .env files is denied " +
     "(CLAUDE.md SECURITY, Zero-Exfiltration).",
+  powershell:
+    "ai-common-rules hook blocked this PowerShell command: it matched a deny " +
+    "rule (Get-Content/cat/type of .env files, Remove-Item -Recurse, git push " +
+    "--force or -f, git reset --hard, sudo, Start-Process -Verb RunAs). Rules " +
+    "live in hooks/hooks.json (README: Security Hooks).",
   bash:
     "ai-common-rules hook blocked this Bash command. Either it matched a deny " +
     "rule (cat/type of .env files, rm -rf, git push --force or -f, git reset " +
