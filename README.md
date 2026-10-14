@@ -24,6 +24,7 @@ Full walkthrough: [Installation](#installation).
 | **Skill** | `/improve-codebase-architecture` | On-demand slash command | Finds architectural deepening opportunities — detects shallow modules, proposes refactors, drives collaborative design |
 | **Skill** | `/frontend-design` | On-demand slash command | Generates distinctive, production-grade UI by committing to a bold aesthetic direction before coding |
 | **Skill** | `/next-move` | On-demand slash command | Reconstructs where a dormant project stopped from repository evidence, then proposes three candidates for what to do next |
+| **Skill** | `/find-app` | Manual-only slash command | Finds candidates for a feature you want — open-source implementations first, then analyzable apps already installed here, then other apps known to have it — and hands the pick to `/reverse-port` |
 | **Skill** | `/reverse-port` | Manual-only slash command | Analyzes an existing app, binary or package with [REA](https://github.com/morluto/rea) from the shipped artifact, then ports one feature's behavior into your own project — after an authorization check |
 | **MCP** | Playwright | Always-on browser control | Lets Claude directly navigate, interact with, and inspect web pages via `browser_*` tools |
 | **MCP** | Context7 | Always-on docs lookup | Fetches real-time, version-specific official documentation to prevent hallucinated or deprecated API usage |
@@ -67,6 +68,7 @@ afterwards. Details and the manual path: [Installation](#installation).
 | Command | What it does |
 |---|---|
 | `/next-move` | Reconstructs where a dormant project stopped, proposes three candidates |
+| `/find-app` | Finds apps or open-source projects that have a feature you want, then points you at `/reverse-port` |
 | `/reverse-port` | Analyzes software you already have with REA, then ports one feature into your project |
 | `/grill-me` | Interviews you about a plan until every decision branch is resolved |
 | `/improve-codebase-architecture` | Finds shallow modules and proposes deepening refactors |
@@ -95,10 +97,11 @@ set it. See [Staying current](#staying-current-while-you-leave-the-project-alone
 
 ## Recent Changes
 
-Current release: **v2.4.2**. Full history, including everything older: [CHANGELOG.md](CHANGELOG.md).
+Current release: **v2.5.0**. Full history, including everything older: [CHANGELOG.md](CHANGELOG.md).
 
 **2026-10-14**
 
+- **Added `/find-app`** (v2.5.0). Manual-only skill that finds candidates for a feature you want: open-source implementations first, then analyzable apps already installed on this machine, then other apps known to have it. It ends with a ready `/reverse-port` line. Finds only; downloads and installs nothing.
 - **Added `/reverse-port`** (v2.4.0). Manual-only skill that analyzes an app, binary or package you already have with [REA](https://github.com/morluto/rea), then ports one feature's behavior into your project. It asks about authorization first and runs REA as a pinned one-off `npx` command; nothing is registered with Claude Code. See [Related Projects](#related-projects) for why REA is invoked, not bundled.
 - **Fixed skill tool permissions.** `allowed-tools` pre-approves tools for the turn, it doesn't restrict them. `next-move`, `frontend-design` and `improve-codebase-architecture` no longer pre-approve Bash/Write/Edit, and `grill-me` is now genuinely read-only through `disallowed-tools`. `validate.py` rejects a blanket Bash/Write/Edit pre-approval from now on.
 - **Fixed silent security-hook blocks.** A blocked command used to show only `No stderr output`; it now says why. The deny itself is unchanged and still dependency-free, and `validate.py` enforces that. Commands Claude Code can't parse (typically an odd number of single quotes in a heredoc) are blocked too; the message and [Security Hooks](#security-hooks) explain the workaround.
@@ -143,6 +146,8 @@ ai-common-rules/
     │   └── SKILL.md                   ← /frontend-design slash command
     ├── next-move/
     │   └── SKILL.md                   ← /next-move slash command
+    ├── find-app/
+    │   └── SKILL.md                   ← /find-app slash command (manual-only)
     └── reverse-port/
         └── SKILL.md                   ← /reverse-port slash command (manual-only)
 ```
@@ -480,7 +485,7 @@ On first run, these are auto-created in your project:
 
 ### `/frontend-design`
 
-**Source:** Adapted from Anthropic's official `frontend-design` skill, unlike the other four skills in this repo, which are original. Bundled inline rather than linked upstream like `superpowers-developing-for-claude-code` (see [Bundled Upstream Plugins](#bundled-upstream-plugins)) since Anthropic doesn't distribute it as its own plugin repo.
+**Source:** Adapted from Anthropic's official `frontend-design` skill, unlike the other five skills in this repo, which are original. Bundled inline rather than linked upstream like `superpowers-developing-for-claude-code` (see [Bundled Upstream Plugins](#bundled-upstream-plugins)) since Anthropic doesn't distribute it as its own plugin repo.
 
 **Role:** Generates distinctive, production-grade UI by committing to a bold aesthetic direction before writing any code. Avoids generic AI defaults (Inter font, purple gradients, predictable layouts).
 
@@ -519,6 +524,25 @@ What happens:
 Run commands are read out of whichever marker file was detected rather than hardcoded, so a new ecosystem costs nothing. When no marker file matches, the skill asks instead of guessing.
 
 See [`PROJECT_STATE.md`](#project_statemd) for the artifact it writes and how staleness is decided.
+
+### `/find-app`
+
+**Role:** Turns "I want a feature like X" into a short, ranked candidate list, so you don't have to know which app to analyze before you start `/reverse-port`.
+
+**When to use:** You know what you want but not where it already exists. Manual-only (`disable-model-invocation`).
+
+```
+/find-app
+a drag-to-reorder kanban board that works offline
+```
+
+It searches in a fixed order and stops early only on a strong open-source match:
+
+1. **Open source first** — `gh search` plus web search, checking each candidate's license and that the feature is really implemented, not just described. If a real match exists, read its source; no reverse engineering needed and the license question is much simpler.
+2. **Installed here** — a read-only look at application install directories (never user data) for apps worth analyzing, each rated for how analyzable REA finds it: Electron and .NET are easy, native code needs Ghidra.
+3. **Other known apps** — web evidence only, each marked *verified* (page opened and it shows the feature) or *unverified*.
+
+You get a table of up to six candidates and one ready line: `/reverse-port <app> — <feature>`. `/reverse-port` is manual-only, so you type that line yourself. This skill only finds: it downloads, installs and clones nothing, and pre-approves no tools, so every command prompts as usual. Its limit is the same as any web search's — for closed-source apps the quality of the list depends on what the search turns up, which is why every claim carries a source.
 
 ### `/reverse-port`
 
