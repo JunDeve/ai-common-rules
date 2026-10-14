@@ -24,6 +24,7 @@ Full walkthrough: [Installation](#installation).
 | **Skill** | `/improve-codebase-architecture` | On-demand slash command | Finds architectural deepening opportunities — detects shallow modules, proposes refactors, drives collaborative design |
 | **Skill** | `/frontend-design` | On-demand slash command | Generates distinctive, production-grade UI by committing to a bold aesthetic direction before coding |
 | **Skill** | `/next-move` | On-demand slash command | Reconstructs where a dormant project stopped from repository evidence, then proposes three candidates for what to do next |
+| **Skill** | `/reverse-port` | Manual-only slash command | Analyzes an existing app, binary or package with [REA](https://github.com/morluto/rea) from the shipped artifact, then ports one feature's behavior into your own project — after an authorization check |
 | **MCP** | Playwright | Always-on browser control | Lets Claude directly navigate, interact with, and inspect web pages via `browser_*` tools |
 | **MCP** | Context7 | Always-on docs lookup | Fetches real-time, version-specific official documentation to prevent hallucinated or deprecated API usage |
 | **Dependency** | `superpowers-developing-for-claude-code` | Auto-installed plugin | Skills + bundled official docs for authoring plugins, skills, and MCP servers |
@@ -66,6 +67,7 @@ afterwards. Details and the manual path: [Installation](#installation).
 | Command | What it does |
 |---|---|
 | `/next-move` | Reconstructs where a dormant project stopped, proposes three candidates |
+| `/reverse-port` | Analyzes software you already have with REA, then ports one feature into your project |
 | `/grill-me` | Interviews you about a plan until every decision branch is resolved |
 | `/improve-codebase-architecture` | Finds shallow modules and proposes deepening refactors |
 | `/frontend-design` | Builds UI committed to a deliberate aesthetic direction |
@@ -91,6 +93,24 @@ set it. See [Staying current](#staying-current-while-you-leave-the-project-alone
 
 ---
 
+## Recent Changes
+
+Current release: **v2.4.1**. Full history, including everything older: [CHANGELOG.md](CHANGELOG.md).
+
+**2026-10-14**
+
+- **Added `/reverse-port`** (v2.4.0). Manual-only skill that analyzes an app, binary or package you already have with [REA](https://github.com/morluto/rea), then ports one feature's behavior into your project. It asks about authorization first and runs REA as a pinned one-off `npx` command; nothing is registered with Claude Code. See [Related Projects](#related-projects) for why REA is invoked, not bundled.
+- **Fixed skill tool permissions.** `allowed-tools` pre-approves tools for the turn, it doesn't restrict them. `next-move`, `frontend-design` and `improve-codebase-architecture` no longer pre-approve Bash/Write/Edit, and `grill-me` is now genuinely read-only through `disallowed-tools`. `validate.py` rejects a blanket Bash/Write/Edit pre-approval from now on.
+- **Fixed silent security-hook blocks.** A blocked command used to show only `No stderr output`; it now says why. The deny itself is unchanged and still dependency-free, and `validate.py` enforces that. Commands Claude Code can't parse (typically an odd number of single quotes in a heredoc) are blocked too; the message and [Security Hooks](#security-hooks) explain the workaround.
+- **Fixed** `/next-move` docs claiming it always calls `writing-plans`, which stopped being bundled in v2.3.0.
+
+**Earlier**
+
+- 2026-09-27, v2.3.0 — `superpowers` removed as a dependency and from the marketplace.
+- 2026-09-14 — security hooks, negative-feedback automation, CHANGELOG, Caveman attribution, skill frontmatter, before/after section.
+
+---
+
 ## Structure
 
 ```
@@ -103,6 +123,7 @@ ai-common-rules/
 ├── hooks/
 │   ├── hooks.json                     ← PreToolUse security + UserPromptSubmit feedback hooks (auto-discovered)
 │   └── scripts/
+│       ├── explain_block.cjs          ← Prints why a security hook blocked a call (the deny itself is a bare `exit 2`)
 │       └── negative_feedback.py       ← UserPromptSubmit hook body -- detects negative feedback, never blocks
 ├── scripts/
 │   ├── validate.py                    ← Structural checks, run by CI and locally
@@ -119,8 +140,10 @@ ai-common-rules/
     │   └── SKILL.md                   ← /improve-codebase-architecture slash command
     ├── frontend-design/
     │   └── SKILL.md                   ← /frontend-design slash command
-    └── next-move/
-        └── SKILL.md                   ← /next-move slash command
+    ├── next-move/
+    │   └── SKILL.md                   ← /next-move slash command
+    └── reverse-port/
+        └── SKILL.md                   ← /reverse-port slash command (manual-only)
 ```
 
 ---
@@ -372,7 +395,11 @@ The `## SECURITY` rules in `CLAUDE.md` are prompt instructions — Claude can vi
 | `Bash(git reset --hard*)` | Destructive Gate |
 | `Bash(sudo *)` | Destructive Gate |
 
-Each entry denies unconditionally (`exit 2`) rather than running a script to decide, deliberately: the `if` matcher already narrows to an exact pattern, and an inline command has to work identically whether Claude Code runs it through Git Bash or PowerShell (Windows without Git Bash falls back to PowerShell) — `exit <code>` is the only construct guaranteed to mean the same thing in both, so no per-OS script pair to maintain.
+Each rule has two entries. The first denies unconditionally (`exit 2`) rather than running a script to decide, deliberately: the `if` matcher already narrows to an exact pattern, and an inline command has to work identically whether Claude Code runs it through Git Bash or PowerShell (Windows without Git Bash falls back to PowerShell) — `exit <code>` is the only construct guaranteed to mean the same thing in both. It also needs no interpreter, so the rule still blocks on a machine without Node. A script-based hook would fail *open* there, because a failed spawn is non-blocking.
+
+The second entry runs `hooks/scripts/explain_block.cjs`, which prints why the call was blocked to stderr. Without it a block shows only `No stderr output`. `scripts/validate.py` fails any rule left without its bare `exit 2` entry.
+
+**When a command is blocked and shouldn't be.** If Claude Code cannot parse a Bash command with confidence, it runs every `if`-filtered hook anyway, so the deny rules fail closed. The usual trigger is an odd number of unquoted single quotes inside a heredoc, for example a Python `'''` string containing an apostrophe. Simplify the command, or write the script to a file first and run that.
 
 ---
 
@@ -424,7 +451,7 @@ On first run, these are auto-created in your project:
 
 ### `/frontend-design`
 
-**Source:** Adapted from Anthropic's official `frontend-design` skill, unlike the other three skills in this repo, which are original. Bundled inline rather than linked upstream like `superpowers-developing-for-claude-code` (see [Bundled Upstream Plugins](#bundled-upstream-plugins)) since Anthropic doesn't distribute it as its own plugin repo.
+**Source:** Adapted from Anthropic's official `frontend-design` skill, unlike the other four skills in this repo, which are original. Bundled inline rather than linked upstream like `superpowers-developing-for-claude-code` (see [Bundled Upstream Plugins](#bundled-upstream-plugins)) since Anthropic doesn't distribute it as its own plugin repo.
 
 **Role:** Generates distinctive, production-grade UI by committing to a bold aesthetic direction before writing any code. Avoids generic AI defaults (Inter font, purple gradients, predictable layouts).
 
@@ -445,7 +472,7 @@ What happens:
 
 ### `/next-move`
 
-**Role:** Reconstructs where a project stopped from repository evidence, then proposes three candidates for what to do next and hands the chosen one to `writing-plans`.
+**Role:** Reconstructs where a project stopped from repository evidence, then proposes three candidates for what to do next and hands the chosen one to a planning skill such as `writing-plans` (from `superpowers`, not bundled) if one is installed — otherwise to you directly.
 
 **When to use:** Reopening a project after a long gap, inheriting an unfamiliar repository, or any time the honest answer to "what should I do here?" is "I don't remember."
 
@@ -458,13 +485,33 @@ What happens:
 1. **Static collection** — commit cadence, branch divergence, stashes, uncommitted work, dated `TODO`/`FIXME` markers, stack detection from marker files, README claims checked against reality, CI presence. Read-only, no side effects.
 2. **Timeline** — one paragraph narrating what the evidence shows. Every claim traces to a collected value; nothing is inferred about intent.
 3. **Execution gate** — builds and tests run only after a `[CAUTION]` approval, with dependency installation called out separately because it mutates the working tree. Declining does not abort the scan; it records the reduced confidence instead.
-4. **Candidates** — three, each naming the evidence behind it, scored H/M/L on impact, cost, and risk. Retiring stale work counts as a candidate. Picking one writes `PROJECT_STATE.md` and invokes `writing-plans`.
+4. **Candidates** — three, each naming the evidence behind it, scored H/M/L on impact, cost, and risk. Retiring stale work counts as a candidate. Picking one writes `PROJECT_STATE.md` and invokes `writing-plans` if that skill is available; otherwise the candidate and its evidence go straight back to you.
 
 Run commands are read out of whichever marker file was detected rather than hardcoded, so a new ecosystem costs nothing. When no marker file matches, the skill asks instead of guessing.
 
 See [`PROJECT_STATE.md`](#project_statemd) for the artifact it writes and how staleness is decided.
 
-### Coverage: where these four don't reach
+### `/reverse-port`
+
+**Role:** Takes software you already have — an app, a binary, a package — figures out how one feature works from the shipped artifact with [REA](https://github.com/morluto/rea), and ports that behavior into your own project.
+
+**When to use:** You want to understand and re-implement something you can run but can't read the source of. Manual-only (`disable-model-invocation`): Claude never starts it on its own.
+
+```
+/reverse-port
+Find how the export dialog builds its file in /path/to/app and port it to this project
+```
+
+What happens:
+
+1. **Authorization gate** — asks whether the target is yours or you're licensed to analyze it. If it's third-party proprietary software, the work stays at the level of behavior (inputs, outputs, edge cases, formats), never code or assets. Bypassing DRM, license checks, anti-cheat or access controls ends the run.
+2. **Runtime gate** — REA runs as a pinned one-off `npx -y rea-agents@6.5.0 <command>`. Static commands never execute the target; anything that does, attaches to a debug port, uses `adb` or captures traffic needs a `[CAUTION]` approval first. No Bash pre-approval, so every command still prompts.
+3. **Evidence report** — each claim tied to a module, function or path from REA's output and marked observed or inferred, with REA's own unknowns passed along.
+4. **Port** — behavior spec first, then a `[PLAN]` for your project, then a fresh implementation. For third-party targets nothing extracted is pasted in.
+
+REA is not bundled and nothing is registered with Claude Code; see [Related Projects](#related-projects) for why. Target routing (JavaScript/Electron, .NET, SQLite, Go, Rust, native) is in the skill itself. On Windows, native analysis needs Ghidra already installed, and several REA workflows are Linux-only.
+
+### Coverage: where these skills don't reach
 
 ```
 [start] ── [design] ────── [implement] ───────── [refactor] ──────────── [handoff]
@@ -551,6 +598,16 @@ The `TOKEN COMPRESSION (Caveman Lite)` rule in `CLAUDE.md` shares its name and c
 [`thedotmack/claude-mem`](https://github.com/thedotmack/claude-mem) has rebranded upstream to "Grok Mem" (package still published as `claude-mem`), broadening from Claude Code specifically to agents generally — the exclusion judgment below isn't about that name, and holds regardless of it.
 
 Claude Mem/Grok Mem adds persistent cross-session memory (SQLite + vector store, auto-summarized from tool activity). Skip it if you're already relying on Claude Code's built-in auto-memory system — running both means duplicate context injection and no single source of truth for project state. Excluding a memory layer only holds up if this repo's own substitute is solid: `PATTERNS.md`'s feedback loop is no longer prompt-only either (see [Anti-Pattern Tracking](#harness-claudemd)) — detection and Hits-counting are now hook-enforced, not something Claude has to remember to do on its own.
+
+### REA — analysis engine, invoked not bundled
+
+`/reverse-port` drives [`morluto/rea`](https://github.com/morluto/rea) (`rea-agents` on npm, MIT) through `npx -y rea-agents@6.5.0`. It is deliberately neither a plugin dependency nor a bundled MCP server like Playwright and Context7:
+
+- **Weight.** Its MCP surface is 172 tools; REA's own measurement is about 496 KB of tool definitions (about 290 KB with its `compact` profile) when a client doesn't defer them. Registering that in every session works against this harness's token discipline, and a one-off CLI call costs nothing until used.
+- **Risk class.** It can execute targets, attach debuggers, capture traffic and drive Android devices. Its own [SECURITY.md](https://github.com/morluto/rea/blob/rea-agents-6.5.0/SECURITY.md) says it is not a sandbox, and the `hooks/hooks.json` deny rules only cover the Bash tool, not MCP calls.
+- **Provenance.** One maintainer does most of the work and the npm package dates from July 2026. This repo has not audited its code; it only checked that the published package declares no install scripts. The pin is manual on purpose: bump it after reading the release notes, not automatically.
+
+REA's [DISCLAIMER](https://github.com/morluto/rea/blob/rea-agents-6.5.0/DISCLAIMER.md) excludes copying proprietary software, DRM and license circumvention, and unauthorized access. `/reverse-port` asks about authorization first for the same reason.
 
 ---
 
