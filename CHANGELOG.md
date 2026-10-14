@@ -14,6 +14,10 @@ rules, pre-`plugin.json`) is not itemized.
 > for tagged versions; see [README.md](README.md#updating-on-demand). Tag
 > each release with `claude plugin tag` to close this gap.
 
+## [2.4.0] - 2026-10-14 (untagged)
+### Added
+- `/reverse-port` skill — analyzes an existing app, binary or package with [REA](https://github.com/morluto/rea) and ports one feature's behavior into the user's own project. Manual-only (`disable-model-invocation: true`), asks about authorization first, and invokes REA as a pinned one-off `npx -y rea-agents@6.5.0 <command>`. REA is deliberately not a plugin dependency or bundled MCP server: nothing is registered with Claude Code, and the skill does not pre-approve Bash.
+
 ## [2.3.0] - 2026-09-27 (untagged)
 ### Removed
 - `superpowers` dropped from `dependencies` and from the marketplace catalog entirely — it no longer installs automatically, and isn't reachable via `@ai-common-rules-marketplace` at all. `superpowers-developing-for-claude-code` is unaffected and still bundled. Install `superpowers` yourself from its own source (`claude plugin marketplace add obra/superpowers`) if you want it.
