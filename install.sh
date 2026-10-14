@@ -31,7 +31,22 @@ if command -v npx >/dev/null 2>&1; then
 else
   warn 'npx not found. The plugin installs fine, but its Playwright and'
   warn 'Context7 MCP servers launch through npx and will not start.'
-  warn 'Install Node.js to enable them.'
+  warn 'Install Node.js to enable them. The hook that injects the harness'
+  warn '(CLAUDE.md) also runs on node, so without it the rules are not applied.'
+fi
+
+# The negative-feedback hook is launched as `python`; python3 alone is not enough.
+if command -v python >/dev/null 2>&1; then
+  ok "python: $(command -v python)"
+else
+  warn 'python not found. Only the negative-feedback hook needs it, and it fails'
+  warn 'silently without it. On Linux/macOS you may need a `python` alias for python3.'
+fi
+
+if command -v gh >/dev/null 2>&1; then
+  ok "gh: $(command -v gh) (run gh auth login if you have not)"
+else
+  warn 'gh (GitHub CLI) not found. Optional: /find-app uses it to search GitHub.'
 fi
 
 cyan "Registering marketplace ($REPO)"

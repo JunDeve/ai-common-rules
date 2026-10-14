@@ -14,6 +14,20 @@ rules, pre-`plugin.json`) is not itemized.
 > for tagged versions; see [README.md](README.md#updating-on-demand). Tag
 > each release with `claude plugin tag` to close this gap.
 
+## [2.5.1] - 2026-10-14 (untagged)
+### Fixed
+- **Installing the plugin never applied the harness.** Claude Code does not load a `CLAUDE.md` at a plugin's root; the Claude Code docs say so and `claude plugin validate` warns about it on this very repo. The rules (response identifiers, approval workflow, security prompts, token compression) therefore only took effect when this repo was itself the open project, and the README's "injected automatically into every session" was wrong. A `SessionStart` hook (`hooks/scripts/inject_harness.cjs`, matcher `startup|resume|clear|compact`) now prints `CLAUDE.md` and Claude Code adds that to the context. The text names the plugin root so `PATTERNS.md` and `PLAYWRIGHT.md` can be found from any project. Needs Node; without it the harness is silently absent and the session starts normally.
+- The negative-feedback hook told Claude to read `PATTERNS.md` and run `scripts/bump_pattern_hits.py` by relative path, which only resolves inside this repo. It now passes absolute paths.
+- `scripts/validate.py` fails if a root `CLAUDE.md` exists without the `SessionStart` wiring, or if `CLAUDE.md` outgrows the 10,000-character hook-output cap (it is 4,156 now).
+### Changed
+- README prerequisites list Python (feedback hook) and the GitHub CLI (`/find-app`); `install.ps1` and `install.sh` warn, without failing, when `node`, `python` or `gh` is missing.
+### Known limit
+- Installed as a plugin, `PATTERNS.md` and its Hits counts sit in the versioned plugin cache, which Claude Code replaces on update, so they only persist in a checkout. Not redesigned here.
+
+## [2.5.0] - 2026-10-14 (untagged)
+### Added
+- `/find-app` skill — turns "I want a feature like X" into a ranked list of candidates and ends with a ready `/reverse-port` line. Manual-only (`disable-model-invocation: true`). Searches in a fixed order: open source first (`gh search` plus web, license checked and the feature confirmed in the code, since a real open-source match makes reverse engineering unnecessary), then analyzable apps already installed on the machine (read-only look at install directories, never user data), then other apps known to have the feature (each marked verified or unverified). It finds only: no downloads, installs or clones, and it pre-approves no tools.
+
 ## [2.4.2] - 2026-10-14 (untagged)
 ### Fixed
 Three gaps found by testing v2.4.1 on Windows:

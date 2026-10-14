@@ -37,9 +37,26 @@ $npx = Get-Command npx -ErrorAction SilentlyContinue
 if ($null -eq $npx) {
     Write-Warn 'npx not found. The plugin installs fine, but its Playwright and'
     Write-Warn 'Context7 MCP servers launch through npx and will not start.'
-    Write-Warn 'Install Node.js to enable them.'
+    Write-Warn 'Install Node.js to enable them. The hook that injects the harness'
+    Write-Warn '(CLAUDE.md) also runs on node, so without it the rules are not applied.'
 } else {
     Write-Ok "npx: $($npx.Source)"
+}
+
+# The negative-feedback hook is launched as `python`.
+$python = Get-Command python -ErrorAction SilentlyContinue
+if ($null -eq $python) {
+    Write-Warn 'python not found. Only the negative-feedback hook needs it, and it fails'
+    Write-Warn 'silently without it.'
+} else {
+    Write-Ok "python: $($python.Source)"
+}
+
+$gh = Get-Command gh -ErrorAction SilentlyContinue
+if ($null -eq $gh) {
+    Write-Warn 'gh (GitHub CLI) not found. Optional: /find-app uses it to search GitHub.'
+} else {
+    Write-Ok "gh: $($gh.Source) (run gh auth login if you have not)"
 }
 
 Write-Step "Registering marketplace ($Repo)"

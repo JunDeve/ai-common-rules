@@ -77,6 +77,28 @@ if hooks_path.exists():
         # Every deny rule must keep a bare `exit 2` entry. Entries that run a
         # script (node, python) fail open when the interpreter is missing: the
         # spawn error is non-blocking, so the call would go through unchecked.
+        # Claude Code does not load a CLAUDE.md at a plugin's root, so the
+        # harness only reaches a session through the SessionStart hook. Without
+        # this wiring the rules silently never apply.
+        harness = ROOT / "CLAUDE.md"
+        if harness.exists():
+            start_hooks = [
+                h for g in hooks.get("hooks", {}).get("SessionStart", []) for h in g.get("hooks", [])
+            ]
+            check(
+                "hooks.json SessionStart injects CLAUDE.md (a plugin's root CLAUDE.md is not loaded)",
+                any(any("inject_harness.cjs" in a for a in h.get("args", [])) for h in start_hooks),
+            )
+            # Hook output is capped at 10,000 characters; the injector adds a
+            # header of about 500. Over the cap, Claude Code replaces the text
+            # with a 2,000-character preview and tells Claude nothing more.
+            size = len(harness.read_text(encoding="utf-8"))
+            check(
+                f"CLAUDE.md fits the 10,000-character hook cap with room for the header ({size} chars)",
+                size <= 9_400,
+                f"{size} > 9400; trim CLAUDE.md or move rules into an on-demand file",
+            )
+
         # PowerShell is a separate tool and the default shell on Windows. A
         # Bash-only matcher leaves every PowerShell call outside the rules.
         matchers = {g.get("matcher") for g in hooks.get("hooks", {}).get("PreToolUse", [])}
