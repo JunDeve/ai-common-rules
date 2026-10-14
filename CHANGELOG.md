@@ -14,6 +14,17 @@ rules, pre-`plugin.json`) is not itemized.
 > for tagged versions; see [README.md](README.md#updating-on-demand). Tag
 > each release with `claude plugin tag` to close this gap.
 
+## [2.4.2] - 2026-10-14 (untagged)
+### Fixed
+Three gaps found by testing v2.4.1 on Windows:
+- **PowerShell had no security rules.** The hook matchers named only `Bash` and `Read`, so every PowerShell call bypassed them; `Get-Content` on a `.env` file read straight through, and PowerShell is the default shell on Windows. Added a `PowerShell` group mirroring the Bash rules (`Get-Content *.env*`, `Remove-Item *-Recurse*`, `git push --force*`/`-f *`, `git reset --hard*`, `sudo *`, `Start-Process *RunAs*`). `scripts/validate.py` now fails if a Bash group exists without a PowerShell one.
+- **The `.env` Read rule only matched under the working directory.** `Read(**/.env*)` follows gitignore semantics, so a `.env` elsewhere on disk passed. Added `Read(//**/.env*)`, the root-anchored form (Windows paths are normalized to `/c/...` first).
+- **`/grill-me` wasn't read-only on Windows.** Its `disallowed-tools` named `Bash` but not `PowerShell`, which stayed available (it ran during a test). Added `PowerShell`, and to `validate.py`'s known tools and blanket-pre-approval check.
+
+### Changed
+- README Security Hooks lists what the rules still can't stop (argument variants, other ways to read a file, best-effort Grep/Glob coverage) and adds an opt-in `~/.claude/settings.json` deny snippet for hard enforcement. The earlier "deterministic" wording is softened to match.
+- Not verified live: `Read(//**/.env*)` and the PowerShell alias canonicalization are from the Claude Code docs, not exercised here.
+
 ## [2.4.1] - 2026-10-14 (untagged)
 ### Fixed
 - Security hooks blocked silently: a denied call showed only `No stderr output`. Each deny rule in `hooks/hooks.json` is now paired with an entry that runs `hooks/scripts/explain_block.cjs`, which prints why. The original bare `exit 2` entry stays, because it needs no interpreter and a script-based hook would fail open on a machine without Node (a failed spawn is non-blocking). `scripts/validate.py` fails any rule that loses its bare `exit 2` entry.

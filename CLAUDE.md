@@ -41,9 +41,9 @@
 
 ## SECURITY
 > 아래 중 일부는 `hooks/hooks.json`이 프롬프트가 아니라 permission 레벨에서 강제. 매핑표: README.md `## Security Hooks`.
-- **Zero-Exfiltration**: `.env`·`secrets`·keys 내용 출력·전송 금지. (`.env` 읽기·`cat`/`type`은 hook이 차단)
+- **Zero-Exfiltration**: `.env`·`secrets`·keys 내용 출력·전송 금지. (`.env` 읽기·`cat`/`type`/`Get-Content`는 hook이 차단 — 패턴 매칭이라 변형은 못 막음, README Security Hooks 참고)
 - **Path Block**: `/etc/`, `C:\Windows\` 등 시스템 경로 접근 → `[CRITICAL]`
-- **Destructive Gate**: 삭제·덮어쓰기 전 `[CAUTION]` + 영향범위 + 재승인. (`rm -rf`·강제 push·`reset --hard`·`sudo`는 hook이 차단)
+- **Destructive Gate**: 삭제·덮어쓰기 전 `[CAUTION]` + 영향범위 + 재승인. (`rm -rf`·`Remove-Item -Recurse`·강제 push·`reset --hard`·`sudo`는 hook이 차단)
 - **Blast Radius**: 영향파일 5개↑ → `[CAUTION]` + Git checkpoint 권고.
 - **PII Masking**: 개인정보 → `[MASKED]`.
 - **Network**: 외부요청 전 목적지·전송데이터 사전 고지.

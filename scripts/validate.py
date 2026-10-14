@@ -77,6 +77,14 @@ if hooks_path.exists():
         # Every deny rule must keep a bare `exit 2` entry. Entries that run a
         # script (node, python) fail open when the interpreter is missing: the
         # spawn error is non-blocking, so the call would go through unchecked.
+        # PowerShell is a separate tool and the default shell on Windows. A
+        # Bash-only matcher leaves every PowerShell call outside the rules.
+        matchers = {g.get("matcher") for g in hooks.get("hooks", {}).get("PreToolUse", [])}
+        check(
+            "hooks.json PreToolUse: a PowerShell group exists whenever a Bash group does",
+            "Bash" not in matchers or "PowerShell" in matchers,
+            f"matchers: {sorted(m for m in matchers if m)}",
+        )
         for i, group in enumerate(hooks.get("hooks", {}).get("PreToolUse", [])):
             rules = {h["if"] for h in group.get("hooks", []) if h.get("if")}
             fail_closed = {
@@ -146,12 +154,12 @@ check("skills/ has at least one skill", bool(skill_dirs))
 # active (Claude Code skills docs, "Pre-approve tools for a skill").
 # Keep KNOWN_TOOLS in sync with the built-in tools Claude Code exposes.
 KNOWN_TOOLS = {
-    "Read", "Write", "Edit", "NotebookEdit", "Bash", "Glob", "Grep",
+    "Read", "Write", "Edit", "NotebookEdit", "Bash", "PowerShell", "Glob", "Grep",
     "WebFetch", "WebSearch", "Task", "TodoWrite",
 }
 # Pre-approving these without a pattern skips the permission prompt for every
 # call, which defeats the approval workflow the rest of this repo enforces.
-APPROVAL_GATED = {"Bash", "Write", "Edit", "NotebookEdit"}
+APPROVAL_GATED = {"Bash", "PowerShell", "Write", "Edit", "NotebookEdit"}
 TOOL_TOKEN = re.compile(r"([A-Za-z_]\w*)(\([^)]*\))?")
 
 
@@ -199,7 +207,7 @@ for d in skill_dirs:
     if present:
         blanket = sorted({t for t, pat in toks if t in APPROVAL_GATED and pat is None})
         check(
-            f"{d.name} allowed-tools does not blanket-approve Bash/Write/Edit",
+            f"{d.name} allowed-tools does not blanket-approve Bash/PowerShell/Write/Edit",
             not blanket,
             f"{blanket} would skip the permission prompt on every call; drop them or use a Bash(...) pattern",
         )
