@@ -14,6 +14,10 @@ rules, pre-`plugin.json`) is not itemized.
 > for tagged versions; see [README.md](README.md#updating-on-demand). Tag
 > each release with `claude plugin tag` to close this gap.
 
+## [2.5.0] - 2026-10-14 (untagged)
+### Added
+- `/find-app` skill — turns "I want a feature like X" into a ranked list of candidates and ends with a ready `/reverse-port` line. Manual-only (`disable-model-invocation: true`). Searches in a fixed order: open source first (`gh search` plus web, license checked and the feature confirmed in the code, since a real open-source match makes reverse engineering unnecessary), then analyzable apps already installed on the machine (read-only look at install directories, never user data), then other apps known to have the feature (each marked verified or unverified). It finds only: no downloads, installs or clones, and it pre-approves no tools.
+
 ## [2.4.2] - 2026-10-14 (untagged)
 ### Fixed
 Three gaps found by testing v2.4.1 on Windows:

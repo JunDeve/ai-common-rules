@@ -26,6 +26,7 @@ claude plugin install ai-common-rules@ai-common-rules-marketplace
 | **스킬** | `/improve-codebase-architecture` | 온디맨드 슬래시 커맨드 | 얕은 모듈 탐지 → 리팩터 기회 제안 → 협업 설계 |
 | **스킬** | `/frontend-design` | 온디맨드 슬래시 커맨드 | 코딩 전 명확한 미적 방향을 확정하고 개성 있는 프로덕션 UI 생성 |
 | **스킬** | `/next-move` | 온디맨드 슬래시 커맨드 | 방치된 프로젝트의 중단 지점을 저장소 증거로 복원 → 다음 한 수 3개 제시 |
+| **스킬** | `/find-app` | 수동 전용 슬래시 커맨드 | 원하는 기능이 있는 후보를 탐색 — 오픈소스 구현 먼저, 그다음 이 PC에 설치된 분석 가능한 앱, 그다음 그 기능이 있다고 알려진 다른 앱 — 고른 것을 `/reverse-port`로 넘김 |
 | **스킬** | `/reverse-port` | 수동 전용 슬래시 커맨드 | 이미 가진 앱·바이너리·패키지를 [REA](https://github.com/morluto/rea)로 배포 산출물에서 분석하고, 기능 하나의 동작을 내 프로젝트로 이식 — 권한 확인 후 |
 | **MCP** | Playwright | 항시 가동 브라우저 제어 | `browser_*` 툴로 웹 페이지 탐색·조작·검사를 Claude가 직접 수행 |
 | **MCP** | Context7 | 항시 가동 문서 조회 | 실시간 공식 문서 fetch → 할루시네이션·deprecated API 방지 |
@@ -69,6 +70,7 @@ macOS·Linux·Git Bash에서는 `./install.sh`. 끝나면 Claude Code 재시작.
 | 커맨드 | 역할 |
 |---|---|
 | `/next-move` | 방치된 프로젝트의 중단 지점 복원 → 다음 한 수 3개 제시 |
+| `/find-app` | 원하는 기능이 있는 앱·오픈소스를 찾고 `/reverse-port`로 안내 |
 | `/reverse-port` | 이미 가진 소프트웨어를 REA로 분석 → 기능 하나를 내 프로젝트로 이식 |
 | `/grill-me` | 결정 트리의 모든 가지가 해소될 때까지 계획을 한 질문씩 추궁 |
 | `/improve-codebase-architecture` | 얕은 모듈 탐지 → 깊게 만드는 리팩터 제안 |
@@ -97,10 +99,11 @@ macOS·Linux·Git Bash에서는 `./install.sh`. 끝나면 Claude Code 재시작.
 
 ## 최근 변경
 
-현재 릴리스: **v2.4.2**. 이전 이력을 포함한 전체: [CHANGELOG.md](CHANGELOG.md).
+현재 릴리스: **v2.5.0**. 이전 이력을 포함한 전체: [CHANGELOG.md](CHANGELOG.md).
 
 **2026-10-14**
 
+- **`/find-app` 추가** (v2.5.0). 원하는 기능이 있는 후보를 찾는 수동 전용 스킬: 오픈소스 구현 먼저, 그다음 이 PC에 설치된 분석 가능한 앱, 그다음 그 기능이 있다고 알려진 다른 앱. 준비된 `/reverse-port` 한 줄로 끝납니다. 찾기만 하고 다운로드·설치는 하지 않습니다.
 - **`/reverse-port` 추가** (v2.4.0). 이미 가진 앱·바이너리·패키지를 [REA](https://github.com/morluto/rea)로 분석하고 기능 하나의 동작을 내 프로젝트로 이식하는 수동 전용 스킬. 권한부터 확인하고 REA는 버전 고정된 일회성 `npx` 명령으로 실행하며, Claude Code에는 아무것도 등록하지 않습니다. REA를 번들하지 않고 호출하는 이유는 [관련 프로젝트](#관련-프로젝트) 참고.
 - **스킬 도구 권한 수정.** `allowed-tools`는 도구를 제한하는 게 아니라 그 턴에 미리 승인합니다. `next-move`·`frontend-design`·`improve-codebase-architecture`는 더 이상 Bash/Write/Edit를 사전 승인하지 않고, `grill-me`는 `disallowed-tools`로 실제 읽기 전용이 됐습니다. `validate.py`는 이제 Bash/Write/Edit 통째 사전 승인을 거부합니다.
 - **보안 훅의 무음 차단 수정.** 차단되면 예전엔 `No stderr output`만 보였는데, 이제 이유를 알려줍니다. 차단 자체는 그대로이고 여전히 의존성이 없으며 `validate.py`가 이를 강제합니다. Claude Code가 파싱하지 못하는 명령(보통 heredoc 안의 홀수 개 작은따옴표)도 차단되는데, 메시지와 [보안 훅](#보안-훅)에 우회 방법이 있습니다.
@@ -145,6 +148,8 @@ ai-common-rules/
     │   └── SKILL.md                   ← /frontend-design 슬래시 커맨드
     ├── next-move/
     │   └── SKILL.md                   ← /next-move 슬래시 커맨드
+    ├── find-app/
+    │   └── SKILL.md                   ← /find-app 슬래시 커맨드 (수동 전용)
     └── reverse-port/
         └── SKILL.md                   ← /reverse-port 슬래시 커맨드 (수동 전용)
 ```
@@ -479,7 +484,7 @@ auth 모듈을 세션 방식에서 JWT로 리팩터할 계획이야
 
 ### `/frontend-design`
 
-**출처:** Anthropic 공식 `frontend-design` 스킬을 가져온 것 — 이 저장소의 나머지 4개 스킬은 자체 제작이지만 이것만 다릅니다. `superpowers-developing-for-claude-code`처럼 업스트림 링크 방식([흡수한 업스트림 플러그인](#흡수한-업스트림-플러그인) 참고) 대신 내부에 그대로 포함한 이유는 Anthropic이 이걸 별도 플러그인 저장소로 배포하지 않기 때문입니다.
+**출처:** Anthropic 공식 `frontend-design` 스킬을 가져온 것 — 이 저장소의 나머지 5개 스킬은 자체 제작이지만 이것만 다릅니다. `superpowers-developing-for-claude-code`처럼 업스트림 링크 방식([흡수한 업스트림 플러그인](#흡수한-업스트림-플러그인) 참고) 대신 내부에 그대로 포함한 이유는 Anthropic이 이걸 별도 플러그인 저장소로 배포하지 않기 때문입니다.
 
 **역할:** 코딩 전 명확한 미적 방향을 확정하고 개성 있는 프로덕션 UI 생성. AI 기본값(Inter 폰트, 보라 그라디언트, 예측 가능한 레이아웃) 회피.
 
@@ -518,6 +523,25 @@ auth 모듈을 세션 방식에서 JWT로 리팩터할 계획이야
 실행 명령은 스킬에 하드코딩하지 않고 탐지된 마커파일에서 읽어냅니다 — 새 생태계 지원에 추가 비용이 없습니다. 일치하는 마커파일이 없으면 추측하지 않고 질문합니다.
 
 산출물과 stale 판정 기준은 [`PROJECT_STATE.md`](#project_statemd) 참조.
+
+### `/find-app`
+
+**역할:** "X 같은 기능이 갖고 싶다"를 짧고 순위가 매겨진 후보 목록으로 바꿔줍니다. `/reverse-port`를 시작하기 전에 어떤 앱을 분석할지 미리 알 필요가 없게 해줍니다.
+
+**언제 사용:** 원하는 건 아는데 그게 이미 어디에 있는지 모를 때. 수동 전용(`disable-model-invocation`).
+
+```
+/find-app
+오프라인에서도 되는, 드래그로 순서 바꾸는 칸반 보드
+```
+
+고정된 순서로 찾고, 강한 오픈소스 후보가 나올 때만 일찍 멈춥니다:
+
+1. **오픈소스 먼저** — `gh search`와 웹 검색으로 찾고, 후보마다 라이선스와 그 기능이 설명만이 아니라 실제로 구현돼 있는지 확인. 진짜 일치하는 게 있으면 소스를 읽으면 되고, 리버스 엔지니어링이 필요 없으며 라이선스 문제도 훨씬 단순합니다.
+2. **이 PC에 설치된 것** — 애플리케이션 설치 디렉터리(사용자 데이터는 절대 안 봄)를 읽기 전용으로 훑어 분석할 만한 앱을 찾고, REA로 얼마나 분석하기 쉬운지 등급을 매깁니다. Electron과 .NET은 쉽고 네이티브 코드는 Ghidra가 필요합니다.
+3. **그 외 알려진 앱** — 웹 근거만 사용하고, 후보마다 *verified*(페이지를 열어 기능이 보임) 또는 *unverified*로 표시합니다.
+
+후보 최대 6개 표와 준비된 한 줄 `/reverse-port <앱> — <기능>`을 받습니다. `/reverse-port`는 수동 전용이라 그 줄은 직접 입력하세요. 이 스킬은 찾기만 합니다: 다운로드·설치·clone을 하지 않고, 도구를 사전 승인하지 않아 모든 명령이 평소처럼 권한 프롬프트를 거칩니다. 한계는 웹 검색과 같습니다 — 폐쇄형 앱은 검색 결과에 따라 목록 품질이 달라지고, 그래서 모든 주장에 출처를 답니다.
 
 ### `/reverse-port`
 
