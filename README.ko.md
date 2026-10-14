@@ -26,6 +26,7 @@ claude plugin install ai-common-rules@ai-common-rules-marketplace
 | **스킬** | `/improve-codebase-architecture` | 온디맨드 슬래시 커맨드 | 얕은 모듈 탐지 → 리팩터 기회 제안 → 협업 설계 |
 | **스킬** | `/frontend-design` | 온디맨드 슬래시 커맨드 | 코딩 전 명확한 미적 방향을 확정하고 개성 있는 프로덕션 UI 생성 |
 | **스킬** | `/next-move` | 온디맨드 슬래시 커맨드 | 방치된 프로젝트의 중단 지점을 저장소 증거로 복원 → 다음 한 수 3개 제시 |
+| **스킬** | `/reverse-port` | 수동 전용 슬래시 커맨드 | 이미 가진 앱·바이너리·패키지를 [REA](https://github.com/morluto/rea)로 배포 산출물에서 분석하고, 기능 하나의 동작을 내 프로젝트로 이식 — 권한 확인 후 |
 | **MCP** | Playwright | 항시 가동 브라우저 제어 | `browser_*` 툴로 웹 페이지 탐색·조작·검사를 Claude가 직접 수행 |
 | **MCP** | Context7 | 항시 가동 문서 조회 | 실시간 공식 문서 fetch → 할루시네이션·deprecated API 방지 |
 | **의존성** | `superpowers-developing-for-claude-code` | 자동 설치 플러그인 | 플러그인·스킬·MCP 서버 제작용 스킬 + 공식 문서 동봉 |
@@ -68,6 +69,7 @@ macOS·Linux·Git Bash에서는 `./install.sh`. 끝나면 Claude Code 재시작.
 | 커맨드 | 역할 |
 |---|---|
 | `/next-move` | 방치된 프로젝트의 중단 지점 복원 → 다음 한 수 3개 제시 |
+| `/reverse-port` | 이미 가진 소프트웨어를 REA로 분석 → 기능 하나를 내 프로젝트로 이식 |
 | `/grill-me` | 결정 트리의 모든 가지가 해소될 때까지 계획을 한 질문씩 추궁 |
 | `/improve-codebase-architecture` | 얕은 모듈 탐지 → 깊게 만드는 리팩터 제안 |
 | `/frontend-design` | 의도된 미적 방향을 확정하고 UI 구현 |
@@ -121,8 +123,10 @@ ai-common-rules/
     │   └── SKILL.md                   ← /improve-codebase-architecture 슬래시 커맨드
     ├── frontend-design/
     │   └── SKILL.md                   ← /frontend-design 슬래시 커맨드
-    └── next-move/
-        └── SKILL.md                   ← /next-move 슬래시 커맨드
+    ├── next-move/
+    │   └── SKILL.md                   ← /next-move 슬래시 커맨드
+    └── reverse-port/
+        └── SKILL.md                   ← /reverse-port 슬래시 커맨드 (수동 전용)
 ```
 
 ---
@@ -423,7 +427,7 @@ auth 모듈을 세션 방식에서 JWT로 리팩터할 계획이야
 
 ### `/frontend-design`
 
-**출처:** Anthropic 공식 `frontend-design` 스킬을 가져온 것 — 이 저장소의 나머지 3개 스킬은 자체 제작이지만 이것만 다릅니다. `superpowers-developing-for-claude-code`처럼 업스트림 링크 방식([흡수한 업스트림 플러그인](#흡수한-업스트림-플러그인) 참고) 대신 내부에 그대로 포함한 이유는 Anthropic이 이걸 별도 플러그인 저장소로 배포하지 않기 때문입니다.
+**출처:** Anthropic 공식 `frontend-design` 스킬을 가져온 것 — 이 저장소의 나머지 4개 스킬은 자체 제작이지만 이것만 다릅니다. `superpowers-developing-for-claude-code`처럼 업스트림 링크 방식([흡수한 업스트림 플러그인](#흡수한-업스트림-플러그인) 참고) 대신 내부에 그대로 포함한 이유는 Anthropic이 이걸 별도 플러그인 저장소로 배포하지 않기 때문입니다.
 
 **역할:** 코딩 전 명확한 미적 방향을 확정하고 개성 있는 프로덕션 UI 생성. AI 기본값(Inter 폰트, 보라 그라디언트, 예측 가능한 레이아웃) 회피.
 
@@ -463,7 +467,27 @@ auth 모듈을 세션 방식에서 JWT로 리팩터할 계획이야
 
 산출물과 stale 판정 기준은 [`PROJECT_STATE.md`](#project_statemd) 참조.
 
-### 커버리지: 이 4개가 못 닿는 지점
+### `/reverse-port`
+
+**역할:** 이미 가진 소프트웨어(앱·바이너리·패키지)에서 기능 하나가 어떻게 동작하는지를 [REA](https://github.com/morluto/rea)로 배포 산출물에서 파악하고, 그 동작을 내 프로젝트로 이식.
+
+**언제 사용:** 실행은 해볼 수 있지만 소스는 못 보는 기능을 이해하고 다시 구현하고 싶을 때. 수동 전용(`disable-model-invocation`) — Claude가 알아서 시작하지 않습니다.
+
+```
+/reverse-port
+/path/to/app의 내보내기 대화상자가 파일을 만드는 방식을 찾아서 이 프로젝트에 이식해줘
+```
+
+실행 흐름:
+
+1. **권한 게이트** — 대상이 내 것인지, 분석할 라이선스·권한이 있는지 먼저 확인. 제3자 독점 소프트웨어면 코드·에셋이 아니라 동작(입력·출력·엣지케이스·포맷) 수준에서만 진행. DRM·라이선스 검사·안티치트·접근 통제 우회는 즉시 중단.
+2. **실행 게이트** — REA는 버전 고정된 일회성 `npx -y rea-agents@6.5.0 <command>`로 실행. 정적 명령은 대상을 실행하지 않고, 대상 실행·디버그 포트 연결·`adb`·트래픽 캡처는 먼저 `[CAUTION]` 승인 필요. Bash를 사전 승인하지 않으므로 모든 명령이 평소처럼 승인 프롬프트를 거침.
+3. **증거 보고** — 모든 주장을 REA 출력의 모듈·함수·경로에 연결하고 관측/추론으로 표시, REA가 알려준 미확인 사항도 그대로 전달.
+4. **이식** — 동작 명세 먼저, 그다음 내 프로젝트용 `[PLAN]`, 그다음 새로 구현. 제3자 대상은 추출한 코드를 붙여넣지 않음.
+
+REA는 번들되지 않고 Claude Code에 아무것도 등록하지 않습니다 — 이유는 [관련 프로젝트](#관련-프로젝트) 참고. 대상별 명령(JavaScript/Electron, .NET, SQLite, Go, Rust, 네이티브)은 스킬 자체에 있습니다. Windows에서 네이티브 분석은 Ghidra가 미리 설치돼 있어야 하고, 일부 REA 워크플로는 Linux 전용입니다.
+
+### 커버리지: 이 스킬들이 못 닿는 지점
 
 ```
 [시작] ── [설계] ────── [구현] ───────── [리팩터] ──────────── [인수인계]
@@ -548,6 +572,16 @@ auth 모듈을 세션 방식에서 JWT로 리팩터할 계획이야
 [`thedotmack/claude-mem`](https://github.com/thedotmack/claude-mem)은 업스트림에서 "Grok Mem"으로 리브랜딩됐습니다 (패키지명은 여전히 `claude-mem`) — Claude Code 전용에서 에이전트 전반으로 범위를 넓힌 것이고, 아래 배제 판단은 이 이름과 무관하게 그대로 유지됩니다.
 
 Claude Mem/Grok Mem은 세션 간 지속 메모리(SQLite + 벡터 스토어, 툴 사용 기록 자동 요약)를 추가합니다. Claude Code의 내장 auto-memory 시스템을 이미 쓰고 있다면 건너뛰세요 — 둘 다 켜면 컨텍스트가 중복 주입되고 프로젝트 상태의 단일 진실 소스가 사라집니다. 메모리 레이어를 배제한 판단은 이 저장소 자체의 대체재가 단단할 때만 성립합니다 — `PATTERNS.md`의 피드백 루프도 이제 프롬프트에만 의존하지 않습니다 ([안티패턴 누적](#하네스-claudemd) 참고): 감지와 Hits 카운팅 모두 Claude가 알아서 기억해야 하는 일이 아니라 훅으로 강제됩니다.
+
+### REA — 분석 엔진, 번들이 아니라 호출
+
+`/reverse-port`는 [`morluto/rea`](https://github.com/morluto/rea)(npm의 `rea-agents`, MIT)를 `npx -y rea-agents@6.5.0`으로 구동합니다. Playwright·Context7처럼 플러그인 의존성이나 번들 MCP 서버로 넣지 않은 건 의도적입니다:
+
+- **무게.** MCP 툴이 172개이고, REA 자체 측정으로 클라이언트가 지연 로딩하지 않을 때 툴 정의만 약 496 KB(`compact` 프로파일로 약 290 KB)입니다. 매 세션마다 등록하면 이 하네스의 토큰 절감 원칙에 반하고, 일회성 CLI 호출은 쓰기 전까진 비용이 0입니다.
+- **위험 등급.** 대상 실행, 디버거 연결, 트래픽 캡처, Android 기기 조작이 가능합니다. 자체 [SECURITY.md](https://github.com/morluto/rea/blob/rea-agents-6.5.0/SECURITY.md)가 샌드박스가 아니라고 밝히고, `hooks/hooks.json`의 deny 규칙은 Bash 툴만 막고 MCP 호출은 막지 못합니다.
+- **출처.** 메인테이너 1인이 대부분을 작업했고 npm 패키지는 2026년 7월에 생성됐습니다. 이 저장소는 코드를 감사하지 않았고, 배포 패키지에 설치 스크립트가 선언돼 있지 않다는 것만 확인했습니다. 버전 고정은 일부러 수동입니다: 자동이 아니라 릴리스 노트를 읽은 뒤 올립니다.
+
+REA의 [DISCLAIMER](https://github.com/morluto/rea/blob/rea-agents-6.5.0/DISCLAIMER.md)는 독점 소프트웨어 복제, DRM·라이선스 우회, 무권한 접근을 제외합니다. `/reverse-port`가 권한부터 묻는 것도 같은 이유입니다.
 
 ---
 

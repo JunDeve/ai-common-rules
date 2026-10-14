@@ -24,6 +24,7 @@ Full walkthrough: [Installation](#installation).
 | **Skill** | `/improve-codebase-architecture` | On-demand slash command | Finds architectural deepening opportunities — detects shallow modules, proposes refactors, drives collaborative design |
 | **Skill** | `/frontend-design` | On-demand slash command | Generates distinctive, production-grade UI by committing to a bold aesthetic direction before coding |
 | **Skill** | `/next-move` | On-demand slash command | Reconstructs where a dormant project stopped from repository evidence, then proposes three candidates for what to do next |
+| **Skill** | `/reverse-port` | Manual-only slash command | Analyzes an existing app, binary or package with [REA](https://github.com/morluto/rea) from the shipped artifact, then ports one feature's behavior into your own project — after an authorization check |
 | **MCP** | Playwright | Always-on browser control | Lets Claude directly navigate, interact with, and inspect web pages via `browser_*` tools |
 | **MCP** | Context7 | Always-on docs lookup | Fetches real-time, version-specific official documentation to prevent hallucinated or deprecated API usage |
 | **Dependency** | `superpowers-developing-for-claude-code` | Auto-installed plugin | Skills + bundled official docs for authoring plugins, skills, and MCP servers |
@@ -66,6 +67,7 @@ afterwards. Details and the manual path: [Installation](#installation).
 | Command | What it does |
 |---|---|
 | `/next-move` | Reconstructs where a dormant project stopped, proposes three candidates |
+| `/reverse-port` | Analyzes software you already have with REA, then ports one feature into your project |
 | `/grill-me` | Interviews you about a plan until every decision branch is resolved |
 | `/improve-codebase-architecture` | Finds shallow modules and proposes deepening refactors |
 | `/frontend-design` | Builds UI committed to a deliberate aesthetic direction |
@@ -119,8 +121,10 @@ ai-common-rules/
     │   └── SKILL.md                   ← /improve-codebase-architecture slash command
     ├── frontend-design/
     │   └── SKILL.md                   ← /frontend-design slash command
-    └── next-move/
-        └── SKILL.md                   ← /next-move slash command
+    ├── next-move/
+    │   └── SKILL.md                   ← /next-move slash command
+    └── reverse-port/
+        └── SKILL.md                   ← /reverse-port slash command (manual-only)
 ```
 
 ---
@@ -424,7 +428,7 @@ On first run, these are auto-created in your project:
 
 ### `/frontend-design`
 
-**Source:** Adapted from Anthropic's official `frontend-design` skill, unlike the other three skills in this repo, which are original. Bundled inline rather than linked upstream like `superpowers-developing-for-claude-code` (see [Bundled Upstream Plugins](#bundled-upstream-plugins)) since Anthropic doesn't distribute it as its own plugin repo.
+**Source:** Adapted from Anthropic's official `frontend-design` skill, unlike the other four skills in this repo, which are original. Bundled inline rather than linked upstream like `superpowers-developing-for-claude-code` (see [Bundled Upstream Plugins](#bundled-upstream-plugins)) since Anthropic doesn't distribute it as its own plugin repo.
 
 **Role:** Generates distinctive, production-grade UI by committing to a bold aesthetic direction before writing any code. Avoids generic AI defaults (Inter font, purple gradients, predictable layouts).
 
@@ -464,7 +468,27 @@ Run commands are read out of whichever marker file was detected rather than hard
 
 See [`PROJECT_STATE.md`](#project_statemd) for the artifact it writes and how staleness is decided.
 
-### Coverage: where these four don't reach
+### `/reverse-port`
+
+**Role:** Takes software you already have — an app, a binary, a package — figures out how one feature works from the shipped artifact with [REA](https://github.com/morluto/rea), and ports that behavior into your own project.
+
+**When to use:** You want to understand and re-implement something you can run but can't read the source of. Manual-only (`disable-model-invocation`): Claude never starts it on its own.
+
+```
+/reverse-port
+Find how the export dialog builds its file in /path/to/app and port it to this project
+```
+
+What happens:
+
+1. **Authorization gate** — asks whether the target is yours or you're licensed to analyze it. If it's third-party proprietary software, the work stays at the level of behavior (inputs, outputs, edge cases, formats), never code or assets. Bypassing DRM, license checks, anti-cheat or access controls ends the run.
+2. **Runtime gate** — REA runs as a pinned one-off `npx -y rea-agents@6.5.0 <command>`. Static commands never execute the target; anything that does, attaches to a debug port, uses `adb` or captures traffic needs a `[CAUTION]` approval first. No Bash pre-approval, so every command still prompts.
+3. **Evidence report** — each claim tied to a module, function or path from REA's output and marked observed or inferred, with REA's own unknowns passed along.
+4. **Port** — behavior spec first, then a `[PLAN]` for your project, then a fresh implementation. For third-party targets nothing extracted is pasted in.
+
+REA is not bundled and nothing is registered with Claude Code; see [Related Projects](#related-projects) for why. Target routing (JavaScript/Electron, .NET, SQLite, Go, Rust, native) is in the skill itself. On Windows, native analysis needs Ghidra already installed, and several REA workflows are Linux-only.
+
+### Coverage: where these skills don't reach
 
 ```
 [start] ── [design] ────── [implement] ───────── [refactor] ──────────── [handoff]
@@ -551,6 +575,16 @@ The `TOKEN COMPRESSION (Caveman Lite)` rule in `CLAUDE.md` shares its name and c
 [`thedotmack/claude-mem`](https://github.com/thedotmack/claude-mem) has rebranded upstream to "Grok Mem" (package still published as `claude-mem`), broadening from Claude Code specifically to agents generally — the exclusion judgment below isn't about that name, and holds regardless of it.
 
 Claude Mem/Grok Mem adds persistent cross-session memory (SQLite + vector store, auto-summarized from tool activity). Skip it if you're already relying on Claude Code's built-in auto-memory system — running both means duplicate context injection and no single source of truth for project state. Excluding a memory layer only holds up if this repo's own substitute is solid: `PATTERNS.md`'s feedback loop is no longer prompt-only either (see [Anti-Pattern Tracking](#harness-claudemd)) — detection and Hits-counting are now hook-enforced, not something Claude has to remember to do on its own.
+
+### REA — analysis engine, invoked not bundled
+
+`/reverse-port` drives [`morluto/rea`](https://github.com/morluto/rea) (`rea-agents` on npm, MIT) through `npx -y rea-agents@6.5.0`. It is deliberately neither a plugin dependency nor a bundled MCP server like Playwright and Context7:
+
+- **Weight.** Its MCP surface is 172 tools; REA's own measurement is about 496 KB of tool definitions (about 290 KB with its `compact` profile) when a client doesn't defer them. Registering that in every session works against this harness's token discipline, and a one-off CLI call costs nothing until used.
+- **Risk class.** It can execute targets, attach debuggers, capture traffic and drive Android devices. Its own [SECURITY.md](https://github.com/morluto/rea/blob/rea-agents-6.5.0/SECURITY.md) says it is not a sandbox, and the `hooks/hooks.json` deny rules only cover the Bash tool, not MCP calls.
+- **Provenance.** One maintainer does most of the work and the npm package dates from July 2026. This repo has not audited its code; it only checked that the published package declares no install scripts. The pin is manual on purpose: bump it after reading the release notes, not automatically.
+
+REA's [DISCLAIMER](https://github.com/morluto/rea/blob/rea-agents-6.5.0/DISCLAIMER.md) excludes copying proprietary software, DRM and license circumvention, and unauthorized access. `/reverse-port` asks about authorization first for the same reason.
 
 ---
 
