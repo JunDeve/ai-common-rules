@@ -19,7 +19,7 @@ Full walkthrough: [Installation](#installation).
 
 | Component | Name | Type | Role |
 |---|---|---|---|
-| **Harness** | `CLAUDE.md` | Auto-injected rules | Controls how Claude behaves in every session — response identifiers, security guardrails, approval workflow, token compression, anti-pattern tracking |
+| **Harness** | `CLAUDE.md` | Rules injected at session start by a hook | Controls how Claude behaves in every session — response identifiers, security guardrails, approval workflow, token compression, anti-pattern tracking |
 | **Skill** | `/grill-me` | On-demand slash command | Stress-tests a plan by walking the decision tree one question at a time before any code is written |
 | **Skill** | `/improve-codebase-architecture` | On-demand slash command | Finds architectural deepening opportunities — detects shallow modules, proposes refactors, drives collaborative design |
 | **Skill** | `/frontend-design` | On-demand slash command | Generates distinctive, production-grade UI by committing to a bold aesthetic direction before coding |
@@ -97,10 +97,11 @@ set it. See [Staying current](#staying-current-while-you-leave-the-project-alone
 
 ## Recent Changes
 
-Current release: **v2.5.0**. Full history, including everything older: [CHANGELOG.md](CHANGELOG.md).
+Current release: **v2.5.1**. Full history, including everything older: [CHANGELOG.md](CHANGELOG.md).
 
 **2026-10-14**
 
+- **Fixed: the harness was never applied by installing the plugin** (v2.5.1). Claude Code doesn't load a `CLAUDE.md` at a plugin's root, so the rules (identifiers, approval workflow, token compression) only ever took effect when this repo itself was the open project, and the README claiming otherwise was wrong. A `SessionStart` hook now injects it, and `validate.py` checks the wiring and the size. The feedback hook also named `PATTERNS.md` and its script by relative path, which only resolve inside this repo; it now uses absolute paths. Prerequisites now list Python and the GitHub CLI.
 - **Added `/find-app`** (v2.5.0). Manual-only skill that finds candidates for a feature you want: open-source implementations first, then analyzable apps already installed on this machine, then other apps known to have it. It ends with a ready `/reverse-port` line. Finds only; downloads and installs nothing.
 - **Added `/reverse-port`** (v2.4.0). Manual-only skill that analyzes an app, binary or package you already have with [REA](https://github.com/morluto/rea), then ports one feature's behavior into your project. It asks about authorization first and runs REA as a pinned one-off `npx` command; nothing is registered with Claude Code. See [Related Projects](#related-projects) for why REA is invoked, not bundled.
 - **Fixed skill tool permissions.** `allowed-tools` pre-approves tools for the turn, it doesn't restrict them. `next-move`, `frontend-design` and `improve-codebase-architecture` no longer pre-approve Bash/Write/Edit, and `grill-me` is now genuinely read-only through `disallowed-tools`. `validate.py` rejects a blanket Bash/Write/Edit pre-approval from now on.
@@ -128,13 +129,14 @@ ai-common-rules/
 │   ├── hooks.json                     ← PreToolUse security + UserPromptSubmit feedback hooks (auto-discovered)
 │   └── scripts/
 │       ├── explain_block.cjs          ← Prints why a security hook blocked a call (the deny itself is a bare `exit 2`)
+│       ├── inject_harness.cjs         ← SessionStart hook body -- puts CLAUDE.md into the session context
 │       └── negative_feedback.py       ← UserPromptSubmit hook body -- detects negative feedback, never blocks
 ├── scripts/
 │   ├── validate.py                    ← Structural checks, run by CI and locally
 │   └── bump_pattern_hits.py           ← Increments a PATTERNS.md entry's Hits count deterministically
 ├── .github/workflows/
 │   └── validate.yml                   ← Runs the checks on every push and PR
-├── CLAUDE.md                          ← Harness rules (always injected)
+├── CLAUDE.md                          ← Harness rules (injected by the SessionStart hook)
 ├── PATTERNS.md                        ← M/L anti-patterns (on-demand, loaded on negative feedback)
 ├── PLAYWRIGHT.md                      ← Playwright MCP rules (on-demand, loaded for browser tasks)
 └── skills/
@@ -161,7 +163,9 @@ ai-common-rules/
 | Requirement | Why | Check |
 |---|---|---|
 | Claude Code CLI | Runs every command below | `claude --version` |
-| Node.js + `npx` | Playwright and Context7 MCP servers launch via `npx` | `npx --version` |
+| Node.js + `npx` | Playwright and Context7 MCP servers launch via `npx`; the hooks that inject the harness and explain blocks run on `node`; `/reverse-port` runs REA through `npx` | `npx --version` |
+| Python | The negative-feedback hook runs as `python` (it fails silently without it, so only that one feature is lost) | `python --version` |
+| GitHub CLI, logged in | `/find-app` searches GitHub with `gh`; optional | `gh auth status` |
 | Git over HTTPS to GitHub | The marketplace is cloned and refreshed with `git` | `git ls-remote https://github.com/JunDeve/ai-common-rules` |
 
 Verified on Claude Code v2.1.116 and later.
@@ -356,7 +360,9 @@ To customize one, fork it and swap the `source` URL in `.claude-plugin/marketpla
 
 ## Harness (CLAUDE.md)
 
-Injected automatically into every session when the plugin is enabled. No invocation needed.
+Active in every session once the plugin is enabled. No invocation needed.
+
+**How it gets there.** Claude Code does not load a `CLAUDE.md` that sits at a plugin's root (`claude plugin validate` warns about exactly that), so installing this plugin alone never applied these rules. A `SessionStart` hook (`hooks/scripts/inject_harness.cjs`) prints the file and Claude Code adds that output to the context at session start, on resume, after `/clear`, and after compaction. Output is capped at 10,000 characters, so `scripts/validate.py` fails if `CLAUDE.md` outgrows it. The hook needs Node; without it the session starts normally and the harness is silently absent. The injected text tells Claude where the plugin lives, so the on-demand files the rules name (`PATTERNS.md`, `PLAYWRIGHT.md`) can be found from any project. Opening this repo itself loads `CLAUDE.md` twice, once as the project's own file and once through the hook; that is harmless.
 
 ### What it does
 
@@ -380,7 +386,7 @@ Injected automatically into every session when the plugin is enabled. No invocat
 
 - **Token Compression (Caveman Lite)** — Drops articles, fillers, and pleasantries. Uses fragments, abbreviations, and causal arrows. Suspended inside `[CAUTION]`/`[CRITICAL]` blocks for clarity. Name and approach cited from [`JuliusBrussee/caveman`](https://github.com/JuliusBrussee/caveman) — see [below](#caveman--token-compression-cited-not-copied) for how the two differ.
 
-- **Anti-Pattern Tracking** — On negative feedback, Claude reads `PATTERNS.md` directly and proposes adding the violation. Items with Hits ≥ 3 are reviewed for promotion to the always-on tier in `CLAUDE.md`. Detection is a `hooks/hooks.json` `UserPromptSubmit` hook (regex, Korean and English) rather than something Claude has to remember to notice; the Hits count itself is incremented by `scripts/bump_pattern_hits.py`, not hand-edited.
+- **Anti-Pattern Tracking** — On negative feedback, Claude reads `PATTERNS.md` directly and proposes adding the violation. Items with Hits ≥ 3 are reviewed for promotion to the always-on tier in `CLAUDE.md`. Detection is a `hooks/hooks.json` `UserPromptSubmit` hook (regex, Korean and English) rather than something Claude has to remember to notice; the Hits count itself is incremented by `scripts/bump_pattern_hits.py`, not hand-edited. **Known limit:** installed as a plugin, `PATTERNS.md` and its Hits live in the plugin's versioned cache directory, which Claude Code replaces on update, so counts only persist in a checkout. Not redesigned yet.
 
 - **Playwright MCP Rules** — Snapshot-first workflow, capability gating, and security guardrails for all `browser_*` tool usage. Full rules in `PLAYWRIGHT.md` (loaded on-demand for browser tasks).
 

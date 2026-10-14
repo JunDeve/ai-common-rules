@@ -21,7 +21,7 @@ claude plugin install ai-common-rules@ai-common-rules-marketplace
 
 | 컴포넌트 | 이름 | 유형 | 역할 |
 |---|---|---|---|
-| **하네스** | `CLAUDE.md` | 자동 주입 규칙 | 모든 세션에서 Claude의 행동 제어 — 응답 식별자, 보안 가드레일, 승인 워크플로우, 토큰 압축, 안티패턴 누적 |
+| **하네스** | `CLAUDE.md` | 세션 시작 시 훅이 주입하는 규칙 | 모든 세션에서 Claude의 행동 제어 — 응답 식별자, 보안 가드레일, 승인 워크플로우, 토큰 압축, 안티패턴 누적 |
 | **스킬** | `/grill-me` | 온디맨드 슬래시 커맨드 | 코드 작성 전 플랜을 결정 트리 기반으로 한 질문씩 스트레스 테스트 |
 | **스킬** | `/improve-codebase-architecture` | 온디맨드 슬래시 커맨드 | 얕은 모듈 탐지 → 리팩터 기회 제안 → 협업 설계 |
 | **스킬** | `/frontend-design` | 온디맨드 슬래시 커맨드 | 코딩 전 명확한 미적 방향을 확정하고 개성 있는 프로덕션 UI 생성 |
@@ -99,10 +99,11 @@ macOS·Linux·Git Bash에서는 `./install.sh`. 끝나면 Claude Code 재시작.
 
 ## 최근 변경
 
-현재 릴리스: **v2.5.0**. 이전 이력을 포함한 전체: [CHANGELOG.md](CHANGELOG.md).
+현재 릴리스: **v2.5.1**. 이전 이력을 포함한 전체: [CHANGELOG.md](CHANGELOG.md).
 
 **2026-10-14**
 
+- **수정: 플러그인을 설치해도 하네스가 적용된 적이 없었습니다** (v2.5.1). Claude Code는 플러그인 루트의 `CLAUDE.md`를 로드하지 않아서, 규칙(식별자, 승인 워크플로우, 토큰 압축)은 이 저장소 자체를 연 프로젝트에서만 적용됐고 반대로 적은 README가 틀렸습니다. 이제 `SessionStart` 훅이 주입하고, `validate.py`가 연결과 크기를 검증합니다. 피드백 훅도 `PATTERNS.md`와 스크립트를 이 저장소 안에서만 통하는 상대 경로로 안내했는데, 이제 절대 경로를 씁니다. 필수 조건에 Python과 GitHub CLI도 추가했습니다.
 - **`/find-app` 추가** (v2.5.0). 원하는 기능이 있는 후보를 찾는 수동 전용 스킬: 오픈소스 구현 먼저, 그다음 이 PC에 설치된 분석 가능한 앱, 그다음 그 기능이 있다고 알려진 다른 앱. 준비된 `/reverse-port` 한 줄로 끝납니다. 찾기만 하고 다운로드·설치는 하지 않습니다.
 - **`/reverse-port` 추가** (v2.4.0). 이미 가진 앱·바이너리·패키지를 [REA](https://github.com/morluto/rea)로 분석하고 기능 하나의 동작을 내 프로젝트로 이식하는 수동 전용 스킬. 권한부터 확인하고 REA는 버전 고정된 일회성 `npx` 명령으로 실행하며, Claude Code에는 아무것도 등록하지 않습니다. REA를 번들하지 않고 호출하는 이유는 [관련 프로젝트](#관련-프로젝트) 참고.
 - **스킬 도구 권한 수정.** `allowed-tools`는 도구를 제한하는 게 아니라 그 턴에 미리 승인합니다. `next-move`·`frontend-design`·`improve-codebase-architecture`는 더 이상 Bash/Write/Edit를 사전 승인하지 않고, `grill-me`는 `disallowed-tools`로 실제 읽기 전용이 됐습니다. `validate.py`는 이제 Bash/Write/Edit 통째 사전 승인을 거부합니다.
@@ -130,13 +131,14 @@ ai-common-rules/
 │   ├── hooks.json                     ← PreToolUse 보안 훅 + UserPromptSubmit 피드백 훅 (자동 인식)
 │   └── scripts/
 │       ├── explain_block.cjs          ← 보안 훅이 호출을 막은 이유를 출력 (차단 자체는 순수 `exit 2`)
+│       ├── inject_harness.cjs         ← SessionStart 훅 본체 -- CLAUDE.md를 세션 컨텍스트에 넣음
 │       └── negative_feedback.py       ← UserPromptSubmit 훅 본체 -- 부정 피드백 감지, 절대 차단 안 함
 ├── scripts/
 │   ├── validate.py                    ← 구조 검증. CI와 로컬 양쪽에서 실행
 │   └── bump_pattern_hits.py           ← PATTERNS.md 항목의 Hits 카운트를 결정론적으로 증가
 ├── .github/workflows/
 │   └── validate.yml                   ← 모든 push·PR에서 검증 실행
-├── CLAUDE.md                          ← 하네스 규칙 (매 세션 자동 주입)
+├── CLAUDE.md                          ← 하네스 규칙 (SessionStart 훅이 주입)
 ├── PATTERNS.md                        ← M/L 안티패턴 (온디맨드, 부정 피드백 시 로드)
 ├── PLAYWRIGHT.md                      ← Playwright MCP 규칙 (온디맨드, 브라우저 작업 시 로드)
 └── skills/
@@ -163,7 +165,9 @@ ai-common-rules/
 | 요구사항 | 이유 | 확인 명령 |
 |---|---|---|
 | Claude Code CLI | 아래 모든 명령의 실행 주체 | `claude --version` |
-| Node.js + `npx` | Playwright·Context7 MCP 서버가 `npx`로 기동 | `npx --version` |
+| Node.js + `npx` | Playwright·Context7 MCP 서버가 `npx`로 기동하고, 하네스를 주입하고 차단 이유를 알려주는 훅이 `node`로 실행되며, `/reverse-port`는 REA를 `npx`로 실행 | `npx --version` |
+| Python | 부정 피드백 훅이 `python`으로 실행됨 (없으면 조용히 실패하므로 그 기능 하나만 빠짐) | `python --version` |
+| GitHub CLI (로그인 상태) | `/find-app`이 `gh`로 GitHub을 검색. 선택 사항 | `gh auth status` |
 | GitHub HTTPS 접근 | 마켓플레이스를 `git`으로 clone·갱신 | `git ls-remote https://github.com/JunDeve/ai-common-rules` |
 
 Claude Code v2.1.116 이상에서 검증됨.
@@ -356,7 +360,9 @@ GitHub 접근이 불가할 때만. 폴더를 zip으로 압축(`.claude-plugin/pl
 
 ## 하네스 (CLAUDE.md)
 
-플러그인 활성화 시 매 세션 자동 주입. 별도 호출 불필요.
+플러그인을 켜면 모든 세션에서 적용. 별도 호출 불필요.
+
+**어떻게 들어오나.** Claude Code는 플러그인 루트의 `CLAUDE.md`를 로드하지 않습니다(`claude plugin validate`가 정확히 이 점을 경고합니다). 그래서 이 플러그인을 설치하는 것만으로는 이 규칙들이 적용된 적이 없었습니다. `SessionStart` 훅(`hooks/scripts/inject_harness.cjs`)이 파일을 출력하고, Claude Code가 그 출력을 세션 시작, 재개, `/clear`, 압축 직후마다 컨텍스트에 추가합니다. 출력은 10,000자로 제한되므로 `CLAUDE.md`가 그걸 넘으면 `scripts/validate.py`가 실패합니다. 훅은 Node가 필요하고, 없으면 세션은 정상 시작되지만 하네스는 조용히 빠집니다. 주입되는 텍스트가 플러그인 위치를 알려주므로 규칙이 이름만 부르는 온디맨드 파일(`PATTERNS.md`, `PLAYWRIGHT.md`)을 어느 프로젝트에서도 찾을 수 있습니다. 이 저장소 자체를 열면 `CLAUDE.md`가 프로젝트 파일과 훅으로 두 번 로드되지만 무해합니다.
 
 ### 역할
 
@@ -380,7 +386,7 @@ GitHub 접근이 불가할 때만. 폴더를 zip으로 압축(`.claude-plugin/pl
 
 - **토큰 압축 (Caveman Lite)** — 관사·필러·인사 제거. 단편 문장·약어·인과 화살표 사용. `[CAUTION]`/`[CRITICAL]` 블록에서는 압축 해제. 이름·발상은 [`JuliusBrussee/caveman`](https://github.com/JuliusBrussee/caveman)에서 인용 — 차이점은 [아래](#caveman--토큰-압축-인용이지-복제가-아니다) 참조.
 
-- **안티패턴 누적** — 부정 피드백 수신 시 `PATTERNS.md`를 직접 읽어 항목 추가 제안. Hits ≥ 3 항목은 `CLAUDE.md` 항상 적용 티어 승급 검토. 감지는 Claude가 알아서 눈치채는 게 아니라 `hooks/hooks.json`의 `UserPromptSubmit` 훅(정규식, 한국어·영어)이 담당하고, Hits 숫자 자체는 직접 고치지 않고 `scripts/bump_pattern_hits.py`가 증가시킵니다.
+- **안티패턴 누적** — 부정 피드백 수신 시 `PATTERNS.md`를 직접 읽어 항목 추가 제안. Hits ≥ 3 항목은 `CLAUDE.md` 항상 적용 티어 승급 검토. 감지는 Claude가 알아서 눈치채는 게 아니라 `hooks/hooks.json`의 `UserPromptSubmit` 훅(정규식, 한국어·영어)이 담당하고, Hits 숫자 자체는 직접 고치지 않고 `scripts/bump_pattern_hits.py`가 증가시킵니다. **알려진 한계:** 플러그인으로 설치하면 `PATTERNS.md`와 Hits가 버전별 캐시 폴더에 있고 업데이트 시 Claude Code가 그 폴더를 교체하므로, 카운트는 체크아웃에서만 유지됩니다. 아직 재설계하지 않았습니다.
 
 - **Playwright MCP 규칙** — Snapshot 우선 워크플로우, capability 게이팅, 보안 가드레일 적용. 전체 규칙은 `PLAYWRIGHT.md`에 기재 (브라우저 작업 시 온디맨드 로드).
 

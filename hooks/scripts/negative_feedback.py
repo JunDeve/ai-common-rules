@@ -12,6 +12,11 @@ is deliberate -- see CLAUDE.md GC TRIGGERS and PATTERNS.md.
 import json
 import re
 import sys
+from pathlib import Path
+
+# PATTERNS.md and the bump script live in the plugin, not in whatever project
+# the session is open on, so the reminder has to name them by absolute path.
+ROOT = Path(__file__).resolve().parents[2].as_posix()
 
 PATTERNS = [
     r"틀렸",
@@ -26,10 +31,11 @@ PATTERNS = [
 
 CONTEXT = (
     "Negative feedback detected in this prompt (see CLAUDE.md GC TRIGGERS). "
-    "Before continuing: read PATTERNS.md, identify the anti-pattern entry this "
-    "feedback matches (or note it needs a NEW row per PATTERNS.md's '기록 형식'), "
-    "then run `python scripts/bump_pattern_hits.py <ID>` to increment its Hits "
-    "count -- don't hand-edit the number."
+    f"Before continuing: read {ROOT}/PATTERNS.md, identify the anti-pattern "
+    "entry this feedback matches (or note it needs a NEW row per that file's "
+    "'기록 형식'), then run "
+    f'`python "{ROOT}/scripts/bump_pattern_hits.py" <ID>` to increment its '
+    "Hits count -- don't hand-edit the number."
 )
 
 
