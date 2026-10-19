@@ -14,6 +14,10 @@ rules, pre-`plugin.json`) is not itemized.
 > for tagged versions; see [README.md](README.md#updating-on-demand). Tag
 > each release with `claude plugin tag` to close this gap.
 
+## [2.7.1] - 2026-10-19 (untagged)
+### Fixed
+- **Re-running the installer did not update anything.** An already-registered marketplace is left as it is and `claude plugin install` reuses the cached copy, so `install.bat` / `install.ps1` / `install.sh` could report success while the machine stayed on an old version. They now refresh the marketplaces and run `claude plugin update` for `ai-common-rules`, its dependency and (unless skipped) Superpowers. "Already at the latest" is treated as a normal result. Running the script again is now the one-step update.
+
 ## [2.7.0] - 2026-10-19 (untagged)
 ### Changed
 - **Response identifiers are now internal signals and are no longer printed in replies.** `[PLAN]`, `[CAUTION]`, `[CRITICAL]` and `[CONFIDENCE:LOW]` still classify Claude's own actions (and keep the approval and re-approval rules), but the user sees the same meaning in plain words ("Plan: …", "Caution: …", "Stopping: …", "Not sure: …"). The optional identifiers (`[ANALYSIS]`, `[CODE]`, `[INFO]`, `[QUESTION]`, `[REF]`) are not used in replies. `CLAUDE.md` (the self-audit now catches a leaked tag), `/next-move`, `/reverse-port`, `/find-app`, `PLAYWRIGHT.md`, `PATTERNS.md` and both READMEs follow. `[MASKED]` is a redaction placeholder, not an identifier, and is unchanged. `CLAUDE.md` rules version stays v4.2 in number but its text changed; the plugin version carries the release.

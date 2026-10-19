@@ -6,6 +6,7 @@
 # One-stop installer. Registers this repository as a plugin marketplace and
 # installs the plugin, then also installs the Superpowers plugin (brainstorming,
 # TDD, writing-plans, ...) from its own marketplace, obra/superpowers-marketplace.
+# Running it again also updates everything to the latest versions.
 # superpowers-developing-for-claude-code comes along as a declared dependency
 # of ai-common-rules -- it is not installed separately.
 #
@@ -113,6 +114,20 @@ if ($SkipSuperpowers) {
     } catch {
         Write-Warn "Could not install ${SpPlugin}: $_"
     }
+}
+
+Write-Step 'Updating to the latest versions'
+
+# Re-running the steps above does not move an already-installed plugin forward:
+# an existing marketplace is left as it is and install reuses the cached copy.
+# Refresh the catalogs, then update each plugin, so running this script again is
+# also how you update. 'already at the latest' is a normal result, not an error.
+claude plugin marketplace update $Marketplace
+claude plugin update "$Plugin@$Marketplace"
+claude plugin update "superpowers-developing-for-claude-code@$Marketplace"
+if (-not $SkipSuperpowers) {
+    claude plugin marketplace update $SpMarketplace
+    claude plugin update "$SpPlugin@$SpMarketplace"
 }
 
 Write-Step 'Enabling background auto-update'

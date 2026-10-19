@@ -342,7 +342,9 @@ both upstream dependencies, with no command from you.
 
 ### Updating on demand
 
-To pull immediately rather than waiting for the background refresh:
+The simplest way: run the installer again — double-click `install.bat` (Windows) or run `./install.sh`. Since v2.7.1 it refreshes the catalogs and updates every plugin it manages, Superpowers included, so re-running it is the update. Restart Claude Code afterwards.
+
+To update only this plugin by hand, rather than waiting for the background refresh:
 
 ```bash
 claude plugin marketplace update ai-common-rules-marketplace

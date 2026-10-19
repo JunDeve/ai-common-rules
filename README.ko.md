@@ -340,7 +340,9 @@ claude plugin uninstall superpowers@ai-common-rules-marketplace
 
 ### 필요할 때 즉시 갱신
 
-백그라운드 갱신을 기다리지 않고 바로 당기려면:
+가장 간단한 방법: 설치 스크립트를 다시 실행하세요 — `install.bat` 더블클릭(Windows) 또는 `./install.sh`. v2.7.1부터 카탈로그를 새로고침하고 관리하는 플러그인 전부(Superpowers 포함)를 업데이트하므로, 다시 실행하는 것이 곧 업데이트입니다. 끝나면 Claude Code를 재시작하세요.
+
+이 플러그인만 직접, 백그라운드 갱신을 기다리지 않고 바로 당기려면:
 
 ```bash
 claude plugin marketplace update ai-common-rules-marketplace
