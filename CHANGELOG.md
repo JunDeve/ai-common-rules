@@ -14,6 +14,13 @@ rules, pre-`plugin.json`) is not itemized.
 > for tagged versions; see [README.md](README.md#updating-on-demand). Tag
 > each release with `claude plugin tag` to close this gap.
 
+## [2.6.0] - 2026-10-19 (untagged)
+### Added
+- `install.bat` — double-click installer for Windows; wraps `install.ps1` with `-ExecutionPolicy Bypass` and keeps the window open at the end.
+- `install.ps1` and `install.sh` now also install Superpowers: they register `obra/superpowers-marketplace` and install `superpowers@superpowers-marketplace` after the main plugin, so one run gives a complete setup. A failure in this step only warns; the `ai-common-rules` install is not rolled back. `-SkipSuperpowers` / `--skip-superpowers` restores the previous two-plugin install.
+### Changed
+- README Installation, Quick Reference and the start-of-project coverage note describe the new behavior. Superpowers is still not a `dependencies` entry and is not in this marketplace (v2.3.0 stands); the installers add it from its own marketplace.
+
 ## [2.5.2] - 2026-10-19 (untagged)
 ### Changed
 Documentation only; no behavior change.

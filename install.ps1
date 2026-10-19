@@ -3,17 +3,27 @@
 #   Right-click this file -> Run with PowerShell
 #   or:  powershell -ExecutionPolicy Bypass -File install.ps1
 #
-# Registers this repository as a plugin marketplace and installs the plugin.
+# One-stop installer. Registers this repository as a plugin marketplace and
+# installs the plugin, then also installs the Superpowers plugin (brainstorming,
+# TDD, writing-plans, ...) from its own marketplace, obra/superpowers-marketplace.
 # superpowers-developing-for-claude-code comes along as a declared dependency
-# -- it is not installed separately.
+# of ai-common-rules -- it is not installed separately.
+#
+# Pass -SkipSuperpowers to install only ai-common-rules.
 #
 # Written for Windows PowerShell 5.1, so no '&&', no ternary, no null-coalescing.
+
+param([switch]$SkipSuperpowers)
 
 $ErrorActionPreference = 'Stop'
 
 $Repo        = 'JunDeve/ai-common-rules'
 $Marketplace = 'ai-common-rules-marketplace'
 $Plugin      = 'ai-common-rules'
+
+$SpRepo        = 'obra/superpowers-marketplace'
+$SpMarketplace = 'superpowers-marketplace'
+$SpPlugin      = 'superpowers'
 
 function Write-Step($text) { Write-Host "`n== $text" -ForegroundColor Cyan }
 function Write-Ok($text)   { Write-Host "   $text"   -ForegroundColor Green }
@@ -80,6 +90,31 @@ try {
 Write-Step "Installing $Plugin (with dependencies)"
 claude plugin install "$Plugin@$Marketplace"
 
+if ($SkipSuperpowers) {
+    Write-Step 'Skipping Superpowers (-SkipSuperpowers)'
+} else {
+    Write-Step "Registering marketplace ($SpRepo)"
+    # A third-party marketplace: a failure here must not undo the install above.
+    try {
+        claude plugin marketplace add $SpRepo
+        Write-Ok 'registered'
+    } catch {
+        $existing = claude plugin marketplace list 2>$null | Out-String
+        if ($existing -match [regex]::Escape($SpMarketplace)) {
+            Write-Ok 'already registered -- continuing'
+        } else {
+            Write-Warn "Could not register $SpMarketplace -- Superpowers not installed: $_"
+        }
+    }
+
+    Write-Step "Installing $SpPlugin"
+    try {
+        claude plugin install "$SpPlugin@$SpMarketplace"
+    } catch {
+        Write-Warn "Could not install ${SpPlugin}: $_"
+    }
+}
+
 Write-Step 'Enabling background auto-update'
 
 # Third-party marketplaces ship with auto-update OFF. Without this the plugin
@@ -116,6 +151,8 @@ Write-Host @'
 Done. Restart Claude Code (or run /reload-plugins) so the harness and the
 MCP servers load.
 
-Expect two plugins, both enabled, both on @ai-common-rules-marketplace:
-  ai-common-rules, superpowers-developing-for-claude-code
+Expect three plugins, all enabled:
+  ai-common-rules, superpowers-developing-for-claude-code  (@ai-common-rules-marketplace)
+  superpowers                                              (@superpowers-marketplace)
+(two, without superpowers, if you passed -SkipSuperpowers)
 '@ -ForegroundColor Cyan

@@ -62,7 +62,8 @@ git clone https://github.com/JunDeve/ai-common-rules && cd ai-common-rules
 powershell -ExecutionPolicy Bypass -File install.ps1
 ```
 
-macOS·Linux·Git Bash에서는 `./install.sh`. 끝나면 Claude Code 재시작.
+Windows에서는 `install.bat`을 더블클릭해도 됩니다. macOS·Linux·Git Bash에서는 `./install.sh`.
+셋 모두 `ai-common-rules`와 Superpowers를 **한 번에** 설치합니다. 끝나면 Claude Code 재시작.
 상세 절차와 수동 설치: [설치](#설치)
 
 **이 플러그인의 슬래시 커맨드**
@@ -129,6 +130,7 @@ ai-common-rules/
 ├── .claude-plugin/
 │   ├── marketplace.json               ← 마켓플레이스 카탈로그 (이 repo + 업스트림 플러그인)
 │   └── plugin.json                    ← 플러그인 매니페스트 + 의존성 + MCP 서버 (Playwright, Context7)
+├── install.bat                        ← 더블클릭 설치 스크립트 (Windows) — install.ps1 래퍼
 ├── install.ps1                        ← 원커맨드 설치 스크립트 (Windows PowerShell)
 ├── install.sh                         ← 원커맨드 설치 스크립트 (macOS / Linux / Git Bash)
 ├── hooks/
@@ -179,14 +181,16 @@ Claude Code v2.1.204에서만 실행해 봤습니다. 여기서 쓰는 훅·스�
 ### 한 번에 설치 (권장)
 
 저장소를 클론하고 쉘에 맞는 설치 스크립트를 실행하세요. 마켓플레이스 등록 →
-의존성 포함 플러그인 설치 → 결과 목록 출력까지 한 번에 처리합니다. 여러 번
-실행해도 안전합니다.
+의존성 포함 플러그인 설치 → `obra/superpowers-marketplace` 등록 후 Superpowers
+설치 → 결과 목록 출력까지 한 번에 처리합니다. 여러 번 실행해도 안전합니다.
+Superpowers 설치가 실패해도 나머지는 정상 설치됩니다. `ai-common-rules`만
+설치하려면 `-SkipSuperpowers`(`install.sh`는 `--skip-superpowers`)를 붙이세요.
 
 ```bash
 git clone https://github.com/JunDeve/ai-common-rules && cd ai-common-rules
 ```
 
-**Windows** — `install.ps1` 우클릭 → *PowerShell로 실행*, 또는:
+**Windows** — `install.bat` 더블클릭, 또는 `install.ps1` 우클릭 → *PowerShell로 실행*, 또는:
 
 ```bash
 powershell -ExecutionPolicy Bypass -File install.ps1
@@ -238,12 +242,23 @@ claude plugin install ai-common-rules@ai-common-rules-marketplace
 claude plugin list
 ```
 
-2개 전부 `✔ enabled`, 전부 `@ai-common-rules-marketplace` 소속이어야 정상:
+이 마켓플레이스의 플러그인 2개가 전부 `✔ enabled`여야 정상:
 
 ```
 ❯ ai-common-rules@ai-common-rules-marketplace                        enabled
 ❯ superpowers-developing-for-claude-code@ai-common-rules-marketplace enabled
 ```
+
+Superpowers는 이 마켓플레이스 소속이 아닙니다. 설치 스크립트가 따로 추가하며, 수동으로는 아래처럼 합니다:
+
+```bash
+claude plugin marketplace add obra/superpowers-marketplace
+```
+```bash
+claude plugin install superpowers@superpowers-marketplace
+```
+
+그러면 `claude plugin list`에 세 번째 항목 `superpowers@superpowers-marketplace`가 보입니다.
 
 **4. Claude Code 재시작** (또는 `/reload-plugins`) — 하네스와 MCP 서버가 로드됩니다.
 
@@ -253,7 +268,7 @@ claude plugin list
 
 - **하네스가 적용됐는지.** 세션 시작 부분에 `SessionStart:<matcher> hook success: ai-common-rules harness, injected by the plugin's SessionStart hook…` 줄이 보입니다(재개 때 확인했고, `startup`도 비슷하게 보일 것으로 예상). 없으면 `node --version`이 되는지 확인하세요. 주입 훅은 Node가 필요하고 없으면 조용히 실패합니다.
 - **스킬이 있는지.** `/`를 입력하면 `/grill-me`, `/next-move`, `/find-app`, `/reverse-port`, `/frontend-design`, `/improve-codebase-architecture`가 보입니다. `ai-common-rules:` 접두어가 붙어 보일 수도 있습니다.
-- **플러그인 2개가 활성인지.** `claude plugin list`에 2개가 각각 `✔ enabled`로 나옵니다.
+- **플러그인이 활성인지.** `claude plugin list`에 각각 `✔ enabled`로 나옵니다: `@ai-common-rules-marketplace` 소속 2개, 그리고 설치 스크립트나 수동으로 추가했다면 `superpowers@superpowers-marketplace`.
 - **보안 훅이 동작하는지.** 프로젝트 안의 `.env` 파일을 읽으라고 시켜보세요. 호출이 `ai-common-rules hook blocked this Read`로 거부돼야 합니다. 호출 전에 Claude가 먼저 거절하면 훅이 아니라 하네스 규칙이 동작한 것입니다.
 
 ### 설치로 딸려오지 않는 것
@@ -601,7 +616,7 @@ REA는 번들되지 않고 Claude Code에 아무것도 등록하지 않습니다
   ?      grill-me   frontend-design   improve-codebase-...     next-move
 ```
 
-계획도 없고 반응할 기존 코드도 없는 빈 저장소에서 시작하는 지점은 이 저장소의 어떤 스킬도 다루지 않고, 이전과 달리 이건 의도적인 비중복이 아니라 진짜 공백입니다: `brainstorming`이 정확히 이 지점을 다루는 `superpowers`가 v2.3.0부터 더 이상 번들되지 않고, 이 마켓플레이스에서 아예 빠졌습니다([CHANGELOG.md](CHANGELOG.md) 참고). 이 단계를 채우고 싶으면 직접 설치하세요 — `claude plugin marketplace add obra/superpowers` 후 `claude plugin install superpowers` — 아니면 이미 손에 쥔 계획에서 시작하세요.
+계획도 없고 반응할 기존 코드도 없는 빈 저장소에서 시작하는 지점은 이 저장소의 어떤 스킬도 다루지 않습니다. `brainstorming`이 정확히 이 지점을 다루는 `superpowers`는 v2.3.0부터 이 플러그인·마켓플레이스에 번들되지 않지만, v2.6.0부터 설치 스크립트(`install.bat` / `install.ps1` / `install.sh`)가 별도 플러그인으로 자체 마켓플레이스 `obra/superpowers-marketplace`에서 함께 설치합니다. 수동 설치했다면 `claude plugin marketplace add obra/superpowers-marketplace` 후 `claude plugin install superpowers@superpowers-marketplace`로 추가하거나, 이미 손에 쥔 계획에서 시작하세요.
 
 ---
 

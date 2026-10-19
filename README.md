@@ -60,7 +60,8 @@ git clone https://github.com/JunDeve/ai-common-rules && cd ai-common-rules
 powershell -ExecutionPolicy Bypass -File install.ps1
 ```
 
-On macOS, Linux, or Git Bash run `./install.sh` instead. Restart Claude Code
+On Windows you can also just double-click `install.bat`. On macOS, Linux, or Git Bash run `./install.sh` instead.
+Each installs `ai-common-rules` **and** Superpowers in one go. Restart Claude Code
 afterwards. Details and the manual path: [Installation](#installation).
 
 **Slash commands from this plugin**
@@ -127,6 +128,7 @@ ai-common-rules/
 ├── .claude-plugin/
 │   ├── marketplace.json               ← Marketplace catalog (this repo + upstream plugins)
 │   └── plugin.json                    ← Plugin manifest + dependencies + MCP servers (Playwright, Context7)
+├── install.bat                        ← Double-click installer (Windows) — wraps install.ps1
 ├── install.ps1                        ← One-command installer (Windows PowerShell)
 ├── install.sh                         ← One-command installer (macOS / Linux / Git Bash)
 ├── hooks/
@@ -177,14 +179,17 @@ Exercised on Claude Code v2.1.204, the only version this has been run on. The ho
 ### One command (recommended)
 
 Clone the repo and run the installer for your shell. It registers the
-marketplace, installs the plugin with its dependencies, and prints the
-resulting plugin list. Re-running it is safe.
+marketplace, installs the plugin with its dependencies, then registers
+`obra/superpowers-marketplace` and installs Superpowers too, and prints the
+resulting plugin list. Re-running it is safe. If Superpowers fails to install,
+the rest still succeeds. Pass `-SkipSuperpowers` (`--skip-superpowers` for
+`install.sh`) to install only `ai-common-rules`.
 
 ```bash
 git clone https://github.com/JunDeve/ai-common-rules && cd ai-common-rules
 ```
 
-**Windows** — right-click `install.ps1` → *Run with PowerShell*, or:
+**Windows** — double-click `install.bat`, or right-click `install.ps1` → *Run with PowerShell*, or:
 
 ```bash
 powershell -ExecutionPolicy Bypass -File install.ps1
@@ -238,12 +243,23 @@ claude plugin install ai-common-rules@ai-common-rules-marketplace
 claude plugin list
 ```
 
-Two plugins, both `✔ enabled`, both on `@ai-common-rules-marketplace`:
+The two plugins from this marketplace, both `✔ enabled`:
 
 ```
 ❯ ai-common-rules@ai-common-rules-marketplace                        enabled
 ❯ superpowers-developing-for-claude-code@ai-common-rules-marketplace enabled
 ```
+
+Superpowers is not part of this marketplace. The installer scripts add it separately; to do the same by hand:
+
+```bash
+claude plugin marketplace add obra/superpowers-marketplace
+```
+```bash
+claude plugin install superpowers@superpowers-marketplace
+```
+
+Then `claude plugin list` shows a third entry, `superpowers@superpowers-marketplace`.
 
 **4. Restart Claude Code** (or `/reload-plugins`) so the harness and MCP servers load.
 
@@ -253,7 +269,7 @@ After the restart, check these in a fresh session:
 
 - **The harness is active.** The start of the session shows a `SessionStart:<matcher> hook success: ai-common-rules harness, injected by the plugin's SessionStart hook…` line (seen on resume; the `startup` variant is expected to look the same). If it's missing, check that `node --version` works; the injector needs Node and fails silently without it.
 - **The skills are there.** `/grill-me`, `/next-move`, `/find-app`, `/reverse-port`, `/frontend-design` and `/improve-codebase-architecture` appear when you type `/`, possibly shown with an `ai-common-rules:` prefix.
-- **Both plugins are enabled.** `claude plugin list` shows two, each `✔ enabled`.
+- **The plugins are enabled.** `claude plugin list` shows each `✔ enabled`: two from `@ai-common-rules-marketplace`, plus `superpowers@superpowers-marketplace` if you used the installer or added it by hand.
 - **The security hooks fire.** Ask Claude to read a `.env` file inside a project; the call should be refused with `ai-common-rules hook blocked this Read`. If Claude declines before making the call, that is the harness rule working instead of the hook.
 
 ### What doesn't come with the install
@@ -603,7 +619,7 @@ REA is not bundled and nothing is registered with Claude Code; see [Related Proj
    ?      grill-me     frontend-design      improve-codebase-...        next-move
 ```
 
-Starting from an empty repo — no plan, no existing code to react to — isn't covered by anything in this repo, and unlike earlier, that's a genuine gap rather than a deliberate non-duplication: `superpowers` (whose `brainstorming` skill covers exactly this) isn't bundled as of v2.3.0, and isn't in this marketplace at all anymore (see [CHANGELOG.md](CHANGELOG.md)). Install it from its own source yourself if you want that stage covered — `claude plugin marketplace add obra/superpowers` then `claude plugin install superpowers` — or start from a plan you already have in hand.
+Starting from an empty repo — no plan, no existing code to react to — isn't covered by any skill in this repo. `superpowers` (whose `brainstorming` skill covers exactly this) isn't bundled in this plugin or its marketplace as of v2.3.0, but since v2.6.0 the installers (`install.bat` / `install.ps1` / `install.sh`) install it from its own marketplace, `obra/superpowers-marketplace`, as a separate plugin. If you installed by hand instead, add it with `claude plugin marketplace add obra/superpowers-marketplace` then `claude plugin install superpowers@superpowers-marketplace`, or start from a plan you already have in hand.
 
 ---
 
