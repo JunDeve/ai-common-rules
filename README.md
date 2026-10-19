@@ -97,7 +97,11 @@ set it. See [Staying current](#staying-current-while-you-leave-the-project-alone
 
 ## Recent Changes
 
-Current release: **v2.5.1**. Full history, including everything older: [CHANGELOG.md](CHANGELOG.md).
+Current release: **v2.5.2**. Full history, including everything older: [CHANGELOG.md](CHANGELOG.md).
+
+**2026-10-19**
+
+- **Installation guide filled in** (v2.5.2). New [Confirm it works](#confirm-it-works) checklist and [What doesn't come with the install](#what-doesnt-come-with-the-install) (login, personal settings, history, `gh auth login`, the optional deny rules, the local clone). The installer paragraph now matches what the scripts check, and the "verified on v2.1.116 and later" claim is replaced with what was actually run: v2.1.204.
 
 **2026-10-14**
 
@@ -168,7 +172,7 @@ ai-common-rules/
 | GitHub CLI, logged in | `/find-app` searches GitHub with `gh`; optional | `gh auth status` |
 | Git over HTTPS to GitHub | The marketplace is cloned and refreshed with `git` | `git ls-remote https://github.com/JunDeve/ai-common-rules` |
 
-Verified on Claude Code v2.1.116 and later.
+Exercised on Claude Code v2.1.204, the only version this has been run on. The hooks, skills and settings used here (`SessionStart`, `PowerShell` rules, `disallowed-tools`, `disable-model-invocation`) were added over time and their minimum versions have not been checked, so treat anything older as untested. An earlier note claimed "v2.1.116 and later"; that was never established for the current feature set.
 
 ### One command (recommended)
 
@@ -192,9 +196,12 @@ powershell -ExecutionPolicy Bypass -File install.ps1
 ./install.sh
 ```
 
-Both check for `claude` on PATH before doing anything, warn (without failing)
-when `npx` is missing since the MCP servers need it, and treat an
-already-registered marketplace as success rather than an error.
+Both check for `claude` on PATH before doing anything and stop if it's missing.
+They warn, without failing, when `node`/`npx` (MCP servers and the hook that
+injects the harness), `python` (the feedback hook) or `gh` (`/find-app`) is
+absent, and they treat an already-registered marketplace as success rather than
+an error. They also turn on background auto-update, which the manual steps
+below do not: see [Staying current](#staying-current-while-you-leave-the-project-alone).
 
 ### Click-only, no terminal
 
@@ -239,6 +246,25 @@ Two plugins, both `✔ enabled`, both on `@ai-common-rules-marketplace`:
 ```
 
 **4. Restart Claude Code** (or `/reload-plugins`) so the harness and MCP servers load.
+
+### Confirm it works
+
+After the restart, check these in a fresh session:
+
+- **The harness is active.** The start of the session shows a `SessionStart:<matcher> hook success: ai-common-rules harness, injected by the plugin's SessionStart hook…` line (seen on resume; the `startup` variant is expected to look the same). If it's missing, check that `node --version` works; the injector needs Node and fails silently without it.
+- **The skills are there.** `/grill-me`, `/next-move`, `/find-app`, `/reverse-port`, `/frontend-design` and `/improve-codebase-architecture` appear when you type `/`, possibly shown with an `ai-common-rules:` prefix.
+- **Both plugins are enabled.** `claude plugin list` shows two, each `✔ enabled`.
+- **The security hooks fire.** Ask Claude to read a `.env` file inside a project; the call should be refused with `ai-common-rules hook blocked this Read`. If Claude declines before making the call, that is the harness rule working instead of the hook.
+
+### What doesn't come with the install
+
+The plugin carries the skills, hooks, harness rules and MCP server definitions. A new machine still has to supply the rest itself:
+
+- **Your Claude login** and anything in your own `~/.claude/settings.json`, such as theme. The installers add only the marketplace entry (with auto-update) and the enabled plugins.
+- **Conversation history and any saved memory.** Both are per machine.
+- **`gh auth login`.** `/find-app` needs a logged-in GitHub CLI; the plugin can't log in for you.
+- **The optional deny rules.** The `permissions.deny` snippet in [Security Hooks](#security-hooks) lives in your own settings file and isn't installed for you.
+- **A local clone of this repo, unless you develop it.** The clone only supplies the installer scripts. The installed plugin is a separate copy under `~/.claude/plugins`, updated by `claude plugin update` or auto-update, not by `git pull`.
 
 ### Migrating a machine that has an older setup
 

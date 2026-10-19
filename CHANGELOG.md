@@ -14,6 +14,13 @@ rules, pre-`plugin.json`) is not itemized.
 > for tagged versions; see [README.md](README.md#updating-on-demand). Tag
 > each release with `claude plugin tag` to close this gap.
 
+## [2.5.2] - 2026-10-19 (untagged)
+### Changed
+Documentation only; no behavior change.
+- README Installation gains **Confirm it works** (harness line at session start, skills listed, two plugins enabled, a `.env` read refused) and **What doesn't come with the install** (Claude login, personal `settings.json`, history and memory, `gh auth login`, the optional deny rules, and that a local clone is not the installed plugin).
+- The installer paragraph now says what the scripts check: they stop without `claude`, warn about `node`, `python` and `gh`, and turn on auto-update, which the manual steps do not.
+- The "verified on Claude Code v2.1.116 and later" note is replaced by what was actually exercised, v2.1.204. Minimum versions for `SessionStart`, `PowerShell` rules, `disallowed-tools` and `disable-model-invocation` are still unchecked.
+
 ## [2.5.1] - 2026-10-14 (untagged)
 ### Fixed
 - **Installing the plugin never applied the harness.** Claude Code does not load a `CLAUDE.md` at a plugin's root; the Claude Code docs say so and `claude plugin validate` warns about it on this very repo. The rules (response identifiers, approval workflow, security prompts, token compression) therefore only took effect when this repo was itself the open project, and the README's "injected automatically into every session" was wrong. A `SessionStart` hook (`hooks/scripts/inject_harness.cjs`, matcher `startup|resume|clear|compact`) now prints `CLAUDE.md` and Claude Code adds that to the context. The text names the plugin root so `PATTERNS.md` and `PLAYWRIGHT.md` can be found from any project. Needs Node; without it the harness is silently absent and the session starts normally.
