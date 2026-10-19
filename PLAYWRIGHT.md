@@ -33,7 +33,7 @@ browser_navigate(url)
 
 ## 예시
 ```
-[PLAN] 로그인 자동화 / 도구: Playwright MCP / Blast: 외부URL / Risk: M
+계획: 로그인 자동화 / 도구: Playwright MCP / Blast: 외부URL / Risk: M
 1. browser_navigate('https://example.com/login')
 2. browser_snapshot() → ref 확인
 3. browser_fill(email_ref, '[MASKED]') / browser_fill(pw_ref, '[MASKED]')

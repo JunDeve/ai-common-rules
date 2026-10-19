@@ -14,6 +14,10 @@ rules, pre-`plugin.json`) is not itemized.
 > for tagged versions; see [README.md](README.md#updating-on-demand). Tag
 > each release with `claude plugin tag` to close this gap.
 
+## [2.7.0] - 2026-10-19 (untagged)
+### Changed
+- **Response identifiers are now internal signals and are no longer printed in replies.** `[PLAN]`, `[CAUTION]`, `[CRITICAL]` and `[CONFIDENCE:LOW]` still classify Claude's own actions (and keep the approval and re-approval rules), but the user sees the same meaning in plain words ("Plan: …", "Caution: …", "Stopping: …", "Not sure: …"). The optional identifiers (`[ANALYSIS]`, `[CODE]`, `[INFO]`, `[QUESTION]`, `[REF]`) are not used in replies. `CLAUDE.md` (the self-audit now catches a leaked tag), `/next-move`, `/reverse-port`, `/find-app`, `PLAYWRIGHT.md`, `PATTERNS.md` and both READMEs follow. `[MASKED]` is a redaction placeholder, not an identifier, and is unchanged. `CLAUDE.md` rules version stays v4.2 in number but its text changed; the plugin version carries the release.
+
 ## [2.6.0] - 2026-10-19 (untagged)
 ### Added
 - `install.bat` — double-click installer for Windows; wraps `install.ps1` with `-ExecutionPolicy Bypass` and keeps the window open at the end.

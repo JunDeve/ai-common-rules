@@ -91,7 +91,7 @@ you did not verify.
 ## 4. Hand off
 
 - **Open-source pick** — no `/reverse-port`. Offer to read its source and
-  propose a port through the normal `[PLAN]` workflow.
+  propose a port through the normal plan-and-approve workflow.
 - **Installed or other app** — end with exactly one line for the chosen
   candidate:
 

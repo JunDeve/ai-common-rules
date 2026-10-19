@@ -95,11 +95,11 @@ something else" is not.
 Static collection cannot tell you whether the project currently builds. Running
 it can — but running it has side effects, so it needs approval.
 
-Present the detected commands with their consequences, marked `[CAUTION]`, and
-call out dependency installation separately from test execution because it
-mutates the working tree:
+Present the detected commands with their consequences as a caution (plain words,
+no bracketed tag), and call out dependency installation separately from test
+execution because it mutates the working tree:
 
-> `[CAUTION]` 실행 예정
+> 주의: 실행 예정
 > 1. `npm ci` — 의존성 설치. 네트워크 발생, `node_modules/` 생성. 약 2분.
 > 2. `npm test` — 테스트 실행. 부작용 없음.
 >

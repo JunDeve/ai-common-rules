@@ -40,7 +40,7 @@ permission prompt.
 Static commands read files without executing the target. Anything that
 *executes* the target, attaches to a process or a browser or Electron debug
 port, uses `adb`, captures network traffic, or installs software is a runtime
-action. Present it as `[CAUTION]` with its effect and wait for approval.
+action. Present it as a caution (plain words, no bracketed tag) with its effect and wait for approval.
 
 Never install Hopper, Ghidra, IDA, JADX, a JDK or Node.js to make a command
 work. If a required engine is missing, say so and stop that path.
@@ -81,7 +81,7 @@ establish something, say so rather than filling the gap with a guess.
 
 1. Write a behavior spec from the evidence: inputs, outputs, state, edge cases,
    dependencies. No code yet.
-2. Present a `[PLAN]` for implementing it in the user's project: target files,
+2. Present a plan for implementing it in the user's project: target files,
    blast radius, risk. Wait for approval.
 3. Implement fresh against the project's own architecture and conventions.
    For third-party targets, never paste decompiled or extracted code. For the

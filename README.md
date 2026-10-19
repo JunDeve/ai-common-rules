@@ -408,19 +408,16 @@ Active in every session once the plugin is enabled. No invocation needed.
 
 ### What it does
 
-- **Response Identifiers** — Required identifiers enforce explicit intent on critical actions; optional identifiers add clarity when helpful
+- **Response Identifiers (internal signals)** — Claude classifies its own actions with identifiers internally, but they are **never printed in replies to you**. The same meaning is written in plain words instead.
 
-**Required (must be used when condition is met):**
+| Identifier | When it applies | What you see instead |
+|---|---|---|
+| `[PLAN]` | Unexecuted plan, awaiting user approval | "Plan: … Proceed?" |
+| `[CAUTION]` | Before any destructive action — re-approval required | "Caution: …" plus impact and a re-confirm question |
+| `[CRITICAL]` | Security threat — immediate stop | "Stopping: …" plus the reason |
+| `[CONFIDENCE:LOW]` | High reasoning uncertainty | "Not sure: …" plus the basis |
 
-| Identifier | When used |
-|---|---|
-| `[PLAN]` | Unexecuted plan, awaiting user approval |
-| `[CAUTION]` | Before any destructive action — re-approval required |
-| `[CRITICAL]` | Security threat — immediate stop |
-| `[CONFIDENCE:LOW]` | High reasoning uncertainty |
-
-**Optional (used when clarity is needed):**
-`[ANALYSIS]` `[CODE]` `[INFO]` `[QUESTION]` `[REF]`
+The optional identifiers (`[ANALYSIS]` `[CODE]` `[INFO]` `[QUESTION]` `[REF]`) are not used in replies at all.
 
 - **Approval Workflow** — Claude reports purpose, target files, blast radius, and security check before acting. Execution only starts after explicit user approval.
 
@@ -491,7 +488,7 @@ Skills are slash commands — inactive until explicitly invoked.
 
 ### `/grill-me`
 
-**Role:** Stress-tests a plan before execution. Prevents premature `[PLAN]` submissions by walking every branch of the decision tree.
+**Role:** Stress-tests a plan before execution. Prevents premature plan submissions by walking every branch of the decision tree.
 
 **When to use:** Before starting any non-trivial task. Invoke it, describe what you're planning to do, and Claude will interview you — one focused question at a time — until all decision branches are resolved.
 
@@ -566,7 +563,7 @@ What happens:
 
 1. **Static collection** — commit cadence, branch divergence, stashes, uncommitted work, dated `TODO`/`FIXME` markers, stack detection from marker files, README claims checked against reality, CI presence. Read-only, no side effects.
 2. **Timeline** — one paragraph narrating what the evidence shows. Every claim traces to a collected value; nothing is inferred about intent.
-3. **Execution gate** — builds and tests run only after a `[CAUTION]` approval, with dependency installation called out separately because it mutates the working tree. Declining does not abort the scan; it records the reduced confidence instead.
+3. **Execution gate** — builds and tests run only after a caution-level approval, with dependency installation called out separately because it mutates the working tree. Declining does not abort the scan; it records the reduced confidence instead.
 4. **Candidates** — three, each naming the evidence behind it, scored H/M/L on impact, cost, and risk. Retiring stale work counts as a candidate. Picking one writes `PROJECT_STATE.md` and invokes `writing-plans` if that skill is available; otherwise the candidate and its evidence go straight back to you.
 
 Run commands are read out of whichever marker file was detected rather than hardcoded, so a new ecosystem costs nothing. When no marker file matches, the skill asks instead of guessing.
@@ -606,9 +603,9 @@ Find how the export dialog builds its file in /path/to/app and port it to this p
 What happens:
 
 1. **Authorization gate** — asks whether the target is yours or you're licensed to analyze it. If it's third-party proprietary software, the work stays at the level of behavior (inputs, outputs, edge cases, formats), never code or assets. Bypassing DRM, license checks, anti-cheat or access controls ends the run.
-2. **Runtime gate** — REA runs as a pinned one-off `npx -y rea-agents@6.5.0 <command>`. Static commands never execute the target; anything that does, attaches to a debug port, uses `adb` or captures traffic needs a `[CAUTION]` approval first. No Bash pre-approval, so every command still prompts.
+2. **Runtime gate** — REA runs as a pinned one-off `npx -y rea-agents@6.5.0 <command>`. Static commands never execute the target; anything that does, attaches to a debug port, uses `adb` or captures traffic needs an explicit caution-level approval first. No Bash pre-approval, so every command still prompts.
 3. **Evidence report** — each claim tied to a module, function or path from REA's output and marked observed or inferred, with REA's own unknowns passed along.
-4. **Port** — behavior spec first, then a `[PLAN]` for your project, then a fresh implementation. For third-party targets nothing extracted is pasted in.
+4. **Port** — behavior spec first, then a plan for your project, then a fresh implementation. For third-party targets nothing extracted is pasted in.
 
 REA is not bundled and nothing is registered with Claude Code; see [Related Projects](#related-projects) for why. Target routing (JavaScript/Electron, .NET, SQLite, Go, Rust, native) is in the skill itself. On Windows, native analysis needs Ghidra already installed, and several REA workflows are Linux-only.
 
