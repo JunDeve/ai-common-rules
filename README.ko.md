@@ -99,7 +99,11 @@ macOS·Linux·Git Bash에서는 `./install.sh`. 끝나면 Claude Code 재시작.
 
 ## 최근 변경
 
-현재 릴리스: **v2.5.1**. 이전 이력을 포함한 전체: [CHANGELOG.md](CHANGELOG.md).
+현재 릴리스: **v2.5.2**. 이전 이력을 포함한 전체: [CHANGELOG.md](CHANGELOG.md).
+
+**2026-10-19**
+
+- **설치 안내 보강** (v2.5.2). 새 [동작 확인](#동작-확인) 체크리스트와 [설치로 딸려오지 않는 것](#설치로-딸려오지-않는-것)(로그인, 개인 설정, 기록, `gh auth login`, 선택 적용 deny 규칙, 로컬 클론). 설치 스크립트 문단은 실제로 확인하는 항목과 맞췄고, "v2.1.116 이상에서 검증됨"은 실제로 실행한 v2.1.204로 바꿨습니다.
 
 **2026-10-14**
 
@@ -170,7 +174,7 @@ ai-common-rules/
 | GitHub CLI (로그인 상태) | `/find-app`이 `gh`로 GitHub을 검색. 선택 사항 | `gh auth status` |
 | GitHub HTTPS 접근 | 마켓플레이스를 `git`으로 clone·갱신 | `git ls-remote https://github.com/JunDeve/ai-common-rules` |
 
-Claude Code v2.1.116 이상에서 검증됨.
+Claude Code v2.1.204에서만 실행해 봤습니다. 여기서 쓰는 훅·스킬·설정(`SessionStart`, `PowerShell` 규칙, `disallowed-tools`, `disable-model-invocation`)은 시간을 두고 추가된 것들이고 최소 버전은 확인하지 않았으니, 그보다 오래된 버전은 미검증으로 보세요. 이전에 "v2.1.116 이상"이라고 적었던 건 현재 기능 세트에 대해 확인된 적이 없습니다.
 
 ### 한 번에 설치 (권장)
 
@@ -194,9 +198,11 @@ powershell -ExecutionPolicy Bypass -File install.ps1
 ./install.sh
 ```
 
-두 스크립트 모두 시작 전에 `claude`가 PATH에 있는지 확인하고, `npx`가 없으면
-MCP 서버가 기동되지 않는다는 경고만 띄우고 진행하며, 이미 등록된 마켓플레이스는
-오류가 아니라 성공으로 처리합니다.
+두 스크립트 모두 시작 전에 `claude`가 PATH에 있는지 확인하고 없으면 멈춥니다.
+`node`/`npx`(MCP 서버와 하네스 주입 훅), `python`(피드백 훅), `gh`(`/find-app`)가
+없으면 실패시키지 않고 경고만 띄우며, 이미 등록된 마켓플레이스는 오류가 아니라
+성공으로 처리합니다. 아래 수동 단계에는 없는 백그라운드 자동 갱신 설정도 켜줍니다:
+[방치해도 최신 상태 유지하기](#방치해도-최신-상태-유지하기) 참조.
 
 ### 터미널 없이 클릭만
 
@@ -240,6 +246,25 @@ claude plugin list
 ```
 
 **4. Claude Code 재시작** (또는 `/reload-plugins`) — 하네스와 MCP 서버가 로드됩니다.
+
+### 동작 확인
+
+재시작 후 새 세션에서 아래를 확인하세요:
+
+- **하네스가 적용됐는지.** 세션 시작 부분에 `SessionStart:<matcher> hook success: ai-common-rules harness, injected by the plugin's SessionStart hook…` 줄이 보입니다(재개 때 확인했고, `startup`도 비슷하게 보일 것으로 예상). 없으면 `node --version`이 되는지 확인하세요. 주입 훅은 Node가 필요하고 없으면 조용히 실패합니다.
+- **스킬이 있는지.** `/`를 입력하면 `/grill-me`, `/next-move`, `/find-app`, `/reverse-port`, `/frontend-design`, `/improve-codebase-architecture`가 보입니다. `ai-common-rules:` 접두어가 붙어 보일 수도 있습니다.
+- **플러그인 2개가 활성인지.** `claude plugin list`에 2개가 각각 `✔ enabled`로 나옵니다.
+- **보안 훅이 동작하는지.** 프로젝트 안의 `.env` 파일을 읽으라고 시켜보세요. 호출이 `ai-common-rules hook blocked this Read`로 거부돼야 합니다. 호출 전에 Claude가 먼저 거절하면 훅이 아니라 하네스 규칙이 동작한 것입니다.
+
+### 설치로 딸려오지 않는 것
+
+플러그인은 스킬, 훅, 하네스 규칙, MCP 서버 정의를 담고 있습니다. 새 PC에서는 나머지를 직접 준비해야 합니다:
+
+- **Claude 로그인**과 내 `~/.claude/settings.json`에 있던 것(테마 등). 설치 스크립트는 마켓플레이스 항목(자동 갱신 포함)과 활성 플러그인만 추가합니다.
+- **대화 기록과 저장된 메모리.** 둘 다 PC마다 따로입니다.
+- **`gh auth login`.** `/find-app`은 로그인된 GitHub CLI가 필요하고, 플러그인이 대신 로그인해줄 수 없습니다.
+- **선택 적용 deny 규칙.** [보안 훅](#보안-훅)의 `permissions.deny` 스니펫은 내 설정 파일에 넣는 것이라 자동으로 설치되지 않습니다.
+- **개발하지 않는다면 이 저장소의 로컬 클론.** 클론은 설치 스크립트를 받는 용도일 뿐입니다. 설치된 플러그인은 `~/.claude/plugins` 아래의 별도 사본이고, `git pull`이 아니라 `claude plugin update`나 자동 갱신으로 업데이트됩니다.
 
 ### 구버전이 설치된 PC 마이그레이션
 
